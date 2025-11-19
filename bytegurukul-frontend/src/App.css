@@ -1,0 +1,175 @@
+/* CSS Variables for Theme */
+:root {
+  /* Light Theme Colors */
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --secondary: #64748b;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --header-bg: #ffffff;
+  --footer-bg: #1f2937;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border: #e5e7eb;
+  --hover-bg: #f3f4f6;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme */
+.dark {
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --secondary: #94a3b8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --background: #0f172a;
+  --surface: #1e293b;
+  --header-bg: #1e293b;
+  --footer-bg: #0f172a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --hover-bg: #334155;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Apply theme to entire app */
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.App {
+  text-align: center;
+  background-color: var(--background);
+  min-height: 100vh;
+}
+
+/* Global styles using CSS variables */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+}
+
+/* Form elements */
+input, select, textarea {
+  background-color: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Utility classes */
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, 
+              color 0.3s ease, 
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
