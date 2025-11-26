@@ -1,6 +1,7 @@
 // src/components/admin/AdminNavbar.js
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { FaCalendarAlt, FaHome, FaUser } from "react-icons/fa";
 import { useAuth } from "../../contexts/AuthContext";
 
 function AdminNavbar() {
@@ -14,6 +15,7 @@ function AdminNavbar() {
     { label: "Instructors", path: "/admin/instructors", icon: "👨‍🏫" },
     { label: "Reports", path: "/admin/reports", icon: "📊" },
     { label: "Settings", path: "/admin/settings", icon: "⚙️" },
+    { label: "Interviews", path: "/admin/interviews", icon: <FaCalendarAlt /> },
   ];
 
   return (

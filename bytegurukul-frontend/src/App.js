@@ -27,6 +27,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminCourses from './pages/AdminCourses';
 import AdminInstructors from './pages/AdminInstructors';
 import AdminSettings from './pages/AdminSettings';
+import AdminInterviews from "./pages/AdminInterviews"; 
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminReports from './pages/AdminReports';
 import AdminApprovals from './pages/AdminApprovals'; // <--- NEW IMPORT
@@ -116,6 +117,7 @@ function App() {
                     <Route path="/admin/instructors" element={<AdminInstructors />} />
                     <Route path="/admin/settings" element={<AdminSettings />} />
                     <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                    <Route path="/admin/interviews" element={<AdminInterviews />} />
                     <Route path="/admin/reports" element={<AdminReports />} />
                     {/* 👇 NEW ROUTE: For managing student applications */}
                     <Route path="/admin/approvals" element={<AdminApprovals />} />

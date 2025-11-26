@@ -1,185 +1,125 @@
-// src/pages/internship/InterviewScheduler.js
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import InternshipNavbar from "../../components/internship/InternshipNavbar";
+import { FaCalendarAlt, FaClock, FaVideo, FaCheckCircle } from 'react-icons/fa';
 
-const mentorSlots = [
-  {
-    mentor: "Ravi Kumar",
-    role: "Senior Software Engineer - Google",
-    date: "2025-02-19",
-    slots: ["10:00 AM", "11:30 AM", "03:00 PM"],
-  },
-  {
-    mentor: "Aditi Verma",
-    role: "Cyber Security Expert - Deloitte",
-    date: "2025-02-20",
-    slots: ["09:30 AM", "01:00 PM", "04:30 PM"],
-  },
-  {
-    mentor: "Dr. Ankit Sharma",
-    role: "Data Scientist - Microsoft",
-    date: "2025-02-21",
-    slots: ["12:00 PM", "02:30 PM"],
-  },
-];
-
-function InterviewScheduler() {
+export default function InterviewScheduler() {
   const navigate = useNavigate();
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const confirmSlot = () => {
-    if (!selectedSlot) {
-      alert("Please select a time slot");
-      return;
+  // In a real app, you'd pass the Application ID via location.state or params
+  // For this demo, we'll find the first 'Approved' application for our test user
+  const studentEmail = "student@example.com"; 
+  const [targetAppId, setTargetAppId] = useState(null);
+
+  useEffect(() => {
+    // Auto-find the application ID to schedule for
+    const findApp = async () => {
+        try {
+            const res = await axios.get(`http://localhost:5000/api/internship/student/${studentEmail}`);
+            const approvedApp = res.data.data.find(app => app.status === 'Approved');
+            if (approvedApp) {
+                setTargetAppId(approvedApp.id);
+            } else {
+                alert("No approved applications found to schedule.");
+                navigate('/internship/status');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+    findApp();
+  }, [navigate]);
+
+  const handleSchedule = async (e) => {
+    e.preventDefault();
+    if (!selectedDate || !selectedTime || !targetAppId) return;
+
+    setLoading(true);
+    try {
+        // Combine date and time
+        const dateTime = new Date(`${selectedDate}T${selectedTime}`);
+
+        const res = await axios.post('http://localhost:5000/api/internship/schedule', {
+            applicationId: String(targetAppId),
+            date: dateTime,
+            type: 'Technical Round'
+        });
+
+        if (res.data.success) {
+            navigate('/internship/status'); // Go back to status to see the update
+        }
+    } catch (error) {
+        alert("Failed to schedule. Please try again.");
+    } finally {
+        setLoading(false);
     }
-    navigate("/internship/interview-confirmation", { state: selectedSlot });
   };
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Book Your Interview Slot</h1>
-        <p style={styles.subtitle}>
-          Choose a mentor & time slot for your internship interview
-        </p>
-      </div>
+        <InternshipNavbar />
+        <div style={styles.container}>
+            <div style={styles.card}>
+                <div style={styles.header}>
+                    <h2 style={styles.title}>Schedule Your Interview</h2>
+                    <p style={styles.subtitle}>Select a convenient slot for your technical round.</p>
+                </div>
 
-      <div style={styles.grid}>
-        {mentorSlots.map((mentor, index) => (
-          <div key={index} style={styles.card}>
-            <div style={styles.mentorBlock}>
-              <h2 style={styles.mentorName}>{mentor.mentor}</h2>
-              <p style={styles.role}>{mentor.role}</p>
-              <p style={styles.date}>📅 {mentor.date}</p>
+                <form onSubmit={handleSchedule} style={styles.form}>
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}><FaCalendarAlt /> Select Date</label>
+                        <input 
+                            type="date" 
+                            style={styles.input} 
+                            required 
+                            min={new Date().toISOString().split('T')[0]}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                        />
+                    </div>
+
+                    <div style={styles.formGroup}>
+                        <label style={styles.label}><FaClock /> Select Time</label>
+                        <select style={styles.input} required onChange={(e) => setSelectedTime(e.target.value)}>
+                            <option value="">-- Choose a Slot --</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="14:00">02:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                        </select>
+                    </div>
+
+                    <div style={styles.infoBox}>
+                        <FaVideo style={{color: '#2563eb', marginTop: '3px'}} />
+                        <div>
+                            <strong>Format:</strong> Video Call (Google Meet)<br/>
+                            <span style={{fontSize: '13px', color: '#64748b'}}>Link will be provided upon confirmation.</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" style={styles.button} disabled={loading}>
+                        {loading ? 'Confirming...' : 'Confirm Schedule'}
+                    </button>
+                </form>
             </div>
-
-            <div style={styles.slotGrid}>
-              {mentor.slots.map((slot) => {
-                const isActive =
-                  selectedSlot &&
-                  selectedSlot.mentor === mentor.mentor &&
-                  selectedSlot.slot === slot;
-
-                return (
-                  <div
-                    key={slot}
-                    onClick={() =>
-                      setSelectedSlot({
-                        mentor: mentor.mentor,
-                        role: mentor.role,
-                        date: mentor.date,
-                        slot,
-                      })
-                    }
-                    style={{
-                      ...styles.slotCard,
-                      ...(isActive ? styles.slotActive : {}),
-                    }}
-                  >
-                    ⏰ {slot}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <button style={styles.confirmBtn} onClick={confirmSlot}>
-        Confirm Interview Slot →
-      </button>
+        </div>
     </div>
   );
 }
 
-/* -------------------- STYLES -------------------- */
 const styles = {
-  page: {
-    padding: "40px 20px",
-    minHeight: "100vh",
-    background: "linear-gradient(135deg,#f8fafc,#eef2ff)",
-    fontFamily: "Poppins",
-  },
-  header: {
-    marginBottom: 30,
-    textAlign: "center",
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 700,
-    color: "var(--text-primary)",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "var(--text-secondary)",
-    marginTop: 6,
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
-    gap: 20,
-    marginBottom: 40,
-  },
-
-  card: {
-    background: "var(--surface)",
-    padding: 25,
-    borderRadius: 14,
-    boxShadow: "0 6px 25px rgba(0,0,0,0.08)",
-  },
-  mentorBlock: {
-    marginBottom: 15,
-  },
-  mentorName: {
-    fontSize: 20,
-    fontWeight: 700,
-  },
-  role: {
-    color: "var(--text-secondary)",
-    marginBottom: 5,
-  },
-  date: {
-    fontWeight: 600,
-    color: "var(--primary)",
-  },
-
-  slotGrid: {
-    display: "grid",
-    gap: 10,
-    gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
-  },
-
-  slotCard: {
-    padding: "10px 15px",
-    background: "#eef2ff",
-    borderRadius: 10,
-    textAlign: "center",
-    cursor: "pointer",
-    transition: "0.25s",
-    fontWeight: 600,
-    border: "2px solid transparent",
-  },
-
-  slotActive: {
-    background: "var(--primary)",
-    color: "white",
-    borderColor: "var(--primary-dark)",
-    transform: "scale(1.05)",
-  },
-
-  confirmBtn: {
-    padding: "14px 20px",
-    background: "linear-gradient(135deg,#2563eb,#7c3aed)",
-    border: "none",
-    color: "white",
-    fontWeight: 600,
-    fontSize: 16,
-    borderRadius: 10,
-    cursor: "pointer",
-    display: "block",
-    margin: "0 auto",
-  },
+    page: { minHeight: '100vh', background: '#f1f5f9', fontFamily: "'Poppins', sans-serif" },
+    container: { padding: '40px 20px', display: 'flex', justifyContent: 'center' },
+    card: { background: 'white', padding: '30px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', width: '100%', maxWidth: '500px' },
+    header: { textAlign: 'center', marginBottom: '30px' },
+    title: { margin: '0 0 10px 0', color: '#1e293b' },
+    subtitle: { color: '#64748b', fontSize: '14px', margin: 0 },
+    form: { display: 'flex', flexDirection: 'column', gap: '20px' },
+    formGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
+    label: { fontSize: '14px', fontWeight: '600', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' },
+    input: { padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '15px', outline: 'none' },
+    infoBox: { background: '#eff6ff', padding: '15px', borderRadius: '8px', display: 'flex', gap: '12px', fontSize: '14px', color: '#1e293b', border: '1px solid #dbeafe' },
+    button: { background: '#2563eb', color: 'white', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s' }
 };
-
-export default InterviewScheduler;

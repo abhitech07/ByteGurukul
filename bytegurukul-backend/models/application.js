@@ -12,9 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        isEmail: true,
-      }
+      validate: { isEmail: true }
     },
     phone: {
       type: DataTypes.STRING,
@@ -24,16 +22,29 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
     },
     resumeText: {
-      type: DataTypes.TEXT, // Allows for longer text
+      type: DataTypes.TEXT,
       allowNull: true,
     },
     roleId: {
-      type: DataTypes.STRING, // e.g., 'web', 'android'
+      type: DataTypes.STRING,
       allowNull: false,
     },
     status: {
       type: DataTypes.STRING,
-      defaultValue: 'Pending', // Default status is Pending
+      defaultValue: 'Pending', 
+    },
+    // --- NEW FIELDS FOR INTERVIEW ---
+    interviewDate: {
+      type: DataTypes.DATE, 
+      allowNull: true
+    },
+    interviewType: {
+      type: DataTypes.STRING, // e.g., 'Technical', 'HR'
+      allowNull: true
+    },
+    interviewLink: {
+      type: DataTypes.STRING, // e.g., Google Meet link
+      allowNull: true
     }
   });
 

@@ -1,42 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaGraduationCap, FaCalendarCheck, FaClock, FaArrowLeft, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
-import InternshipNavbar from "../../components/internship/InternshipNavbar"; // <-- CORRECTED IMPORT
-
-// Mock statuses: Adding more realistic statuses and updating the mock data for better demonstration
-const mockApplications = [
-  { id: "APP-2025-001", role: "Frontend Intern (React)", date: "2025-10-06", status: "Rejected", progress: 100, canSchedule: false },
-  { id: "APP-2025-002", role: "Backend Intern (Node.js)", date: "2025-09-28", status: "Interview Scheduled", progress: 75, canSchedule: true, interviewDate: "Oct 25, 2025, 10:00 AM" },
-  { id: "APP-2025-003", role: "Data Science Intern", date: "2025-10-20", status: "Under Review", progress: 30, canSchedule: false },
-  { id: "APP-2025-004", role: "UI/UX Designer", date: "2025-11-15", status: "Application Received", progress: 10, canSchedule: false },
-  { id: "APP-2025-005", role: "Cloud Engineer", date: "2025-11-01", status: "Hired", progress: 100, canSchedule: false },
-];
+import axios from "axios"; 
+import { FaGraduationCap, FaCalendarCheck, FaClock, FaArrowLeft, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import InternshipNavbar from "../../components/internship/InternshipNavbar";
 
 export default function InternshipStatus() {
-  const [apps] = useState(mockApplications);
+  const [apps, setApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // NOTE: In a real app, you would get this email from your AuthContext/Login state.
+  // For this demo, we are hardcoding the email you used to apply.
+  // CHANGE THIS to the email you enter in the application form to see your results.
+  const studentEmail = "student@example.com"; 
+
+  useEffect(() => {
+    fetchMyApplications();
+  }, []);
+
+  const fetchMyApplications = async () => {
+    try {
+      // Fetch data from the new backend route we just created
+      const res = await axios.get(`http://localhost:5000/api/internship/student/${studentEmail}`);
+      
+      if (res.data.success) {
+        // Format the DB data to match our UI structure
+        const formattedData = res.data.data.map(app => ({
+            id: `APP-${app.id}`,
+            role: getRoleLabel(app.roleId), // Convert code to readable name
+            date: new Date(app.createdAt).toLocaleDateString(),
+            status: app.status,
+            progress: getProgress(app.status),
+            canSchedule: app.status === 'Approved', // Logic: Only approved students can schedule
+            rawDate: app.createdAt
+        }));
+        setApps(formattedData);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper: Get readable role name
+  const getRoleLabel = (roleId) => {
+      const roles = {
+          'web': 'Full Stack Web Development',
+          'android': 'Android Development',
+          'cyber': 'Cyber Security Analyst',
+          'datascience': 'Data Science Intern'
+      };
+      return roles[roleId] || roleId || 'Internship Role';
+  };
+
+  // Helper: Calculate progress bar based on status
+  const getProgress = (status) => {
+      switch (status) {
+          case 'Pending': return 30;
+          case 'Approved': return 100;
+          case 'Rejected': return 100;
+          case 'Hired': return 100;
+          default: return 10;
+      }
+  };
 
   const getStatusStyle = (status) => {
     switch (status) {
       case "Hired":
-        return { backgroundColor: 'var(--success)', icon: FaCheckCircle };
+      case "Approved":
+        return { backgroundColor: 'var(--success)', icon: FaCheckCircle, color: 'white' }; // Using generic success color
       case "Rejected":
-        return { backgroundColor: 'var(--error)', icon: FaTimesCircle };
+        return { backgroundColor: 'var(--error)', icon: FaTimesCircle, color: 'white' };
       case "Interview Scheduled":
-      case "Interview":
-        return { backgroundColor: 'var(--warning)', icon: FaCalendarCheck };
-      case "Under Review":
+        return { backgroundColor: 'var(--warning)', icon: FaCalendarCheck, color: 'black' };
+      case "Pending":
       default:
-        return { backgroundColor: 'var(--primary)', icon: FaClock };
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Hired": return 'var(--success)';
-      case "Rejected": return 'var(--error)';
-      case "Interview Scheduled":
-      case "Interview": return 'var(--warning)';
-      default: return 'var(--text-primary)';
+        return { backgroundColor: 'var(--primary)', icon: FaClock, color: 'white' };
     }
   };
 
@@ -47,101 +86,115 @@ export default function InternshipStatus() {
         <div style={styles.container}>
           {/* Header Section */}
           <div style={styles.header}>
-            <h2 style={styles.title}>My Internship Applications</h2>
+            <div>
+                <h2 style={styles.title}>My Internship Applications</h2>
+                <p style={{margin: '5px 0 0', color: '#64748b', fontSize: '14px'}}>Viewing applications for: <strong>{studentEmail}</strong></p>
+            </div>
             <Link to="/internship" style={styles.browseLink} className="browseLink">
               <FaArrowLeft style={{ marginRight: '8px' }} />
               Browse More Roles
             </Link>
           </div>
 
-          <div style={styles.applicationsGrid}>
-            {apps.length === 0 ? (
-              <div style={styles.noApplications}>
-                <FaGraduationCap style={{ fontSize: '48px', color: 'var(--text-secondary)' }} />
-                <h3>You haven't submitted any applications yet.</h3>
-                <Link to="/internship" style={styles.browseButton}>
-                  Start Applying Now
-                </Link>
+          {loading ? (
+              <div style={styles.loadingContainer}>
+                  <FaSpinner className="spinner" style={{ fontSize: '40px', color: 'var(--primary)' }} />
+                  <p style={{ marginTop: '15px', color: 'var(--text-secondary)' }}>Loading your applications...</p>
               </div>
-            ) : (
-              apps.map((a) => {
-                const statusInfo = getStatusStyle(a.status);
-                const StatusIcon = statusInfo.icon;
+          ) : (
+            <div style={styles.applicationsGrid}>
+                {apps.length === 0 ? (
+                <div style={styles.noApplications}>
+                    <FaGraduationCap style={{ fontSize: '48px', color: 'var(--text-secondary)' }} />
+                    <h3>You haven't submitted any applications yet.</h3>
+                    <Link to="/internship" style={styles.browseButton}>
+                    Start Applying Now
+                    </Link>
+                </div>
+                ) : (
+                apps.map((a) => {
+                    const statusInfo = getStatusStyle(a.status);
+                    const StatusIcon = statusInfo.icon;
 
-                return (
-                  <div key={a.id} style={styles.appCard} className="appCard">
-                    {/* Role & ID */}
-                    <div style={styles.infoSection}>
-                      <div style={styles.roleTitle}>{a.role}</div>
-                      <div style={styles.appMeta}>{a.id} • Applied {a.date}</div>
-                      
-                      {/* Progress Bar */}
-                      <div style={styles.progressContainer}>
-                        <div style={styles.progressBar}>
-                          <div 
-                            style={{
-                              ...styles.progressFill,
-                              width: `${a.progress}%`,
-                              backgroundColor: a.progress === 100 ? 'var(--success)' : 'var(--primary)'
-                            }} 
-                          />
-                        </div>
-                        <span style={styles.progressText}>{a.progress}% Complete</span>
-                      </div>
-                    </div>
-
-                    {/* Status & Actions */}
-                    <div style={styles.statusSection}>
-                        <div style={{ ...styles.statusBadge, backgroundColor: statusInfo.backgroundColor, color: statusInfo.status === "Rejected" ? 'white' : 'var(--text-primary)' }}>
-                            <StatusIcon style={{ marginRight: '6px' }} />
-                            {a.status}
-                        </div>
+                    return (
+                    <div key={a.id} style={styles.appCard} className="appCard">
+                        {/* Role & ID */}
+                        <div style={styles.infoSection}>
+                        <div style={styles.roleTitle}>{a.role}</div>
+                        <div style={styles.appMeta}>{a.id} • Applied {a.date}</div>
                         
-                        {a.status === "Interview Scheduled" && (
-                            <div style={styles.interviewInfo}>
-                                <FaCalendarCheck style={{ marginRight: '6px' }} />
-                                {a.interviewDate}
+                        {/* Progress Bar */}
+                        <div style={styles.progressContainer}>
+                            <div style={styles.progressBar}>
+                            <div 
+                                style={{
+                                ...styles.progressFill,
+                                width: `${a.progress}%`,
+                                backgroundColor: a.status === 'Rejected' ? 'var(--error)' : (a.progress === 100 ? 'var(--success)' : 'var(--primary)')
+                                }} 
+                            />
                             </div>
-                        )}
+                            <span style={styles.progressText}>
+                                {a.status === 'Pending' ? 'Under Review' : a.status}
+                            </span>
+                        </div>
+                        </div>
 
-                        {a.canSchedule && (
-                            <Link to="/internship/scheduler" style={styles.actionButton} className="actionButton">
-                                Schedule / View Interview
-                            </Link>
-                        )}
-                        
-                        {a.status === "Hired" && (
-                            <Link to="/dashboard" style={{ ...styles.actionButton, backgroundColor: 'var(--success)' }} className="actionButton">
-                                View Offer Details
-                            </Link>
-                        )}
-                        
-                        {a.status === "Rejected" && (
-                            <button style={{ ...styles.actionButton, backgroundColor: 'var(--error)', cursor: 'default' }} className="actionButton" disabled>
-                                Feedback Received
-                            </button>
-                        )}
-
-                        {!a.canSchedule && a.status !== "Hired" && a.status !== "Rejected" && (
-                            <div style={styles.pendingAction}>
-                                <FaClock style={{ marginRight: '6px' }} />
-                                Awaiting response
+                        {/* Status & Actions */}
+                        <div style={styles.statusSection}>
+                            <div style={{ 
+                                ...styles.statusBadge, 
+                                backgroundColor: statusInfo.backgroundColor, 
+                                color: 'white' // Ensure text is readable
+                            }}>
+                                <StatusIcon style={{ marginRight: '6px' }} />
+                                {a.status}
                             </div>
-                        )}
+                            
+                            {a.canSchedule && (
+                                <Link to="/internship/interview" style={styles.actionButton} className="actionButton">
+                                    Schedule Interview <FaCalendarCheck style={{ marginLeft: '6px' }} />
+                                </Link>
+                            )}
+                            
+                            {a.status === "Rejected" && (
+                                <button style={{ ...styles.actionButton, backgroundColor: 'var(--text-secondary)', cursor: 'not-allowed' }} disabled>
+                                    Closed
+                                </button>
+                            )}
+
+                            {!a.canSchedule && a.status !== "Rejected" && (
+                                <div style={styles.pendingAction}>
+                                    <FaClock style={{ marginRight: '6px' }} />
+                                    Awaiting update
+                                </div>
+                            )}
+                        </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                    );
+                })
+                )}
+            </div>
+          )}
         </div>
       </div>
+      
+      {/* Inject Keyframes for Spinner */}
+      <style>{`
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
 
 const styles = {
-  // Global/Layout Styles (from InternshipApply.js, for consistency)
+  // Global/Layout Styles
   page: { 
     fontFamily: "'Poppins', sans-serif", 
     minHeight: "100vh", 
@@ -156,6 +209,13 @@ const styles = {
   container: { 
     width: '100%' 
   },
+  loadingContainer: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '100px 0'
+  },
   
   // Header and Navigation
   header: { 
@@ -163,7 +223,7 @@ const styles = {
     justifyContent: "space-between", 
     alignItems: "center", 
     marginBottom: 30,
-    paddingBottom: '10px',
+    paddingBottom: '20px',
     borderBottom: '1px solid var(--border)'
   },
   title: { 
@@ -178,10 +238,11 @@ const styles = {
     fontWeight: '600',
     display: 'flex',
     alignItems: 'center',
-    padding: '8px 12px',
+    padding: '8px 16px',
     borderRadius: '8px',
-    backgroundColor: 'var(--hover-bg)',
-    transition: 'background-color 0.3s ease'
+    backgroundColor: 'var(--surface)',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+    transition: 'all 0.3s ease'
   },
 
   // Applications List
@@ -236,9 +297,10 @@ const styles = {
     borderRadius: 8,
   },
   progressText: {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: 'var(--text-secondary)'
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase'
   },
 
   // Status and Actions
@@ -246,53 +308,51 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: '10px',
+    gap: '12px',
     minWidth: '220px'
   },
   statusBadge: { 
     fontWeight: 700, 
-    padding: '6px 12px',
+    padding: '6px 14px',
     borderRadius: '20px',
-    fontSize: '12px',
+    fontSize: '13px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: '120px',
-    textAlign: 'center'
-  },
-  interviewInfo: {
-      fontSize: '14px',
-      color: 'var(--warning)',
-      fontWeight: '600',
-      display: 'flex',
-      alignItems: 'center',
+    textAlign: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
   },
   actionButton: { 
-    padding: "10px 16px", 
+    padding: "10px 20px", 
     backgroundColor: "var(--primary)", 
     color: "white", 
     borderRadius: 8, 
     textDecoration: "none",
     fontWeight: 600,
     fontSize: '14px',
-    transition: 'background-color 0.3s ease'
+    transition: 'transform 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    border: 'none'
   },
   pendingAction: {
     fontSize: '14px',
     color: 'var(--text-secondary)',
     display: 'flex',
     alignItems: 'center',
-    padding: '10px 16px',
+    padding: '8px 16px',
+    backgroundColor: 'var(--hover-bg)',
+    borderRadius: '8px'
   },
 
   // Empty State
   noApplications: {
     textAlign: 'center',
-    padding: '60px',
+    padding: '80px 20px',
     backgroundColor: 'var(--surface)',
     borderRadius: '16px',
-    border: '1px solid var(--border)',
-    boxShadow: 'var(--shadow)',
+    border: '2px dashed var(--border)',
     color: 'var(--text-secondary)',
   },
   browseButton: {
@@ -307,7 +367,7 @@ const styles = {
     marginTop: '20px',
     display: 'inline-block',
     textDecoration: 'none',
-    transition: 'background-color 0.3s ease'
+    boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)'
   }
 };
 
@@ -315,8 +375,8 @@ const styles = {
 const customStyles = `
   @media (hover: hover) {
     .appCard:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--shadow-lg);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
     }
     
     .browseLink:hover {
@@ -326,35 +386,43 @@ const customStyles = `
 
     .actionButton:hover {
       background-color: var(--primary-dark, #1d4ed8);
+      transform: translateY(-2px);
     }
     
-    .noApplications a:hover {
+    .browseButton:hover {
         background-color: var(--primary-dark, #1d4ed8);
-    }
-    
-    a.actionButton[style*="background-color: var(--success)"]:hover {
-        background-color: #047857 !important; /* Darker success */
-    }
-    
-    button.actionButton[disabled][style*="background-color: var(--error)"] {
-        opacity: 0.8;
+        transform: translateY(-2px);
     }
   }
 
   @media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .browseLink {
+        width: 100%;
+        justify-content: center;
+    }
     .appCard {
       flex-direction: column;
       align-items: flex-start !important;
-      gap: 15px;
+      gap: 20px;
     }
     
     .statusSection {
         align-items: flex-start !important;
-        min-width: 100%;
+        width: 100%;
+        border-top: 1px solid var(--border);
+        padding-top: 15px;
     }
     
     .progressContainer {
         width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
     
     .progressBar {
@@ -363,16 +431,12 @@ const customStyles = `
     
     .actionButton {
         width: 100%;
-        text-align: center;
+        justify-content: center;
     }
     
     .pendingAction {
         width: 100%;
         justify-content: center;
-        padding: 8px 16px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background-color: var(--hover-bg);
     }
   }
 `;

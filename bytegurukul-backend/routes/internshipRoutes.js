@@ -47,6 +47,58 @@ router.get('/all', async (req, res) => {
     }
 });
 
+// @route   GET /api/internship/student/:email
+// @desc    Get all applications for a specific student email
+router.get('/student/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        // Fetch applications matching the email
+        const applications = await Application.findAll({ 
+            where: { email },
+            order: [['createdAt', 'DESC']] 
+        });
+        res.json({ success: true, data: applications });
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch applications" });
+    }
+});
+
+// @route   POST /api/internship/schedule
+// @desc    Schedule an interview for an application (NEW)
+router.post('/schedule', async (req, res) => {
+    try {
+        const { applicationId, date, type } = req.body;
+
+        // Handle format if frontend sends "APP-1" or just "1"
+        const id = applicationId.toString().replace('APP-', '');
+
+        const app = await Application.findByPk(id);
+
+        if (!app) {
+            return res.status(404).json({ success: false, message: "Application not found" });
+        }
+
+        // Update Application fields
+        app.interviewDate = date;
+        app.interviewType = type || 'General Round';
+        app.status = 'Interview Scheduled'; 
+        app.interviewLink = 'https://meet.google.com/abc-defg-hij'; // Mock link
+        
+        await app.save();
+
+        res.json({ 
+            success: true, 
+            message: "Interview scheduled successfully!", 
+            data: app 
+        });
+
+    } catch (error) {
+        console.error("Scheduling Error:", error);
+        res.status(500).json({ success: false, message: "Failed to schedule interview" });
+    }
+});
+
 // @route   PUT /api/internship/:id/status
 // @desc    Update status (e.g., Approve/Reject)
 router.put('/:id/status', async (req, res) => {
