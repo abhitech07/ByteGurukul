@@ -91,4 +91,48 @@ router.post('/:courseId/enroll', protect, async (req, res) => {
     }
 });
 
+// --- NEW ROUTES ADDED BELOW ---
+
+// @route   PUT /api/courses/update/:id
+// @desc    Update course details (Instructor only)
+router.put('/update/:id', protect, async (req, res) => {
+    try {
+        const course = await Course.findByPk(req.params.id);
+        if (!course) return res.status(404).json({ message: "Course not found" });
+
+        // Optional: Check ownership (if only creator can edit)
+        // if (course.instructorId != req.user) return res.status(403).json({ message: "Not authorized" });
+
+        await course.update(req.body);
+        res.json({ success: true, message: "Course updated", data: course });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   DELETE /api/courses/:id
+// @desc    Delete course
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const course = await Course.findByPk(req.params.id);
+        if (!course) return res.status(404).json({ message: "Course not found" });
+
+        await course.destroy();
+        res.json({ success: true, message: "Course deleted" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   GET /api/courses/instructor/my-courses
+// @desc    Get courses created by logged in instructor
+router.get('/instructor/my-courses', protect, async (req, res) => {
+    try {
+        const courses = await Course.findAll({ where: { instructorId: req.user } });
+        res.json({ success: true, data: courses });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;

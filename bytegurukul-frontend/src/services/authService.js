@@ -24,6 +24,10 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', credentials);
 
+      console.log('AuthService Login Response:', response); // DEBUG
+      console.log('AuthService Response.user:', response.user); // DEBUG
+      console.log('AuthService Response.user.role:', response.user?.role); // DEBUG
+
       if (response.success && response.token) {
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));

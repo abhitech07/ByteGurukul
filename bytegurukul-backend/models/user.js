@@ -22,9 +22,17 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     role: { // Student, Instructor, Admin
       type: DataTypes.STRING,
-      defaultValue: 'Student' 
+      defaultValue: 'Student'
     }
   }, {
     hooks: {

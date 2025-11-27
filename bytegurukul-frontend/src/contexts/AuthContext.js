@@ -97,31 +97,55 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const response = await authService.login({ email, password });
-      
+
+      console.log('Full Login Response:', response); // DEBUG
+      console.log('Response type:', typeof response); // DEBUG
+      console.log('Response keys:', Object.keys(response)); // DEBUG
+
       if (response.success) {
-        const userData = response.data || response.user; // Handle potential structure diffs
-        
+        const userData = response.user; // Use response.user directly
+
+        console.log('Login UserData:', userData); // DEBUG
+        console.log('Login Role:', userData?.role); // DEBUG
+        console.log('UserData type:', typeof userData); // DEBUG
+        console.log('UserData keys:', userData ? Object.keys(userData) : 'null'); // DEBUG
+
+        // CRITICAL: Clear any existing stored user to prevent conflicts
+        localStorage.removeItem('user');
+
         // CRITICAL: Ensure user state is set immediately after success
-        setUser(userData); 
+        setUser(userData);
 
         // CRITICAL FIX: Ensure role comparison is case-insensitive
-        const role = (userData.role || "").toLowerCase(); 
-        
+        const role = (userData?.role || "").toLowerCase();
+
+        console.log('Role after toLowerCase:', role); // DEBUG
+        console.log('Navigating to:', role === "admin" ? "/admin-dashboard" : role === "instructor" ? "/instructor-dashboard" : "/dashboard"); // DEBUG
+
         if (role === "admin") {
-            navigate("/admin-dashboard");
+            console.log('Navigating to admin dashboard'); // DEBUG
+            alert('Admin detected - navigating to admin dashboard'); // TEMP DEBUG
+            navigate("/admin-dashboard", { replace: true });
         }
         else if (role === "instructor") {
-             navigate("/instructor-dashboard");
+             console.log('Navigating to instructor dashboard'); // DEBUG
+             alert('Instructor detected - navigating to instructor dashboard'); // TEMP DEBUG
+             navigate("/instructor-dashboard", { replace: true });
         }
         else {
+             console.log('Navigating to student dashboard'); // DEBUG
+             alert('Student detected - navigating to student dashboard'); // TEMP DEBUG
              // Default student dashboard
-             navigate("/dashboard");
+             navigate("/dashboard", { replace: true });
         }
+      } else {
+        console.log('Login not successful:', response); // DEBUG
       }
       return response;
     } catch (error) {
+      console.log('Login error:', error); // DEBUG
       // Re-throw the error so the Login page can display "Invalid credentials"
-      throw error; 
+      throw error;
     }
   };
 

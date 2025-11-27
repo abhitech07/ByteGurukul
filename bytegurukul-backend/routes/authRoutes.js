@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { protect } = require('../middleware/auth'); // Imported middleware
 
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
@@ -94,6 +95,59 @@ router.post('/signup', async (req, res) => {
         res.json({ success: true, message: "User registered successfully" });
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// --- NEW ROUTES ADDED BELOW ---
+
+// @route   GET /api/auth/me
+// @desc    Get current logged in user details
+router.get('/me', protect, async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user, {
+            attributes: { exclude: ['password'] }
+        });
+        res.json({ success: true, data: user });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+// @route   PUT /api/auth/update-profile
+// @desc    Update user details
+router.put('/update-profile', protect, async (req, res) => {
+    try {
+        const { name, phone } = req.body;
+        const user = await User.findByPk(req.user);
+
+        if (name) user.name = name;
+        if (phone) user.phone = phone;
+        
+        await user.save();
+        res.json({ success: true, message: "Profile updated", data: user });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   PUT /api/auth/change-password
+// @desc    Change Password
+router.put('/change-password', protect, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findByPk(req.user);
+
+        // Validate Current Password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
+
+        // Update password (Hooks in User model will hash this automatically)
+        user.password = newPassword; 
+        await user.save();
+
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 

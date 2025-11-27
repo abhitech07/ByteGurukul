@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Application } = require('../models');
+const { protect } = require('../middleware/auth'); // Imported middleware
 
 // @route   POST /api/internship/apply
 // @desc    Submit a new internship application
@@ -115,6 +116,27 @@ router.put('/:id/status', async (req, res) => {
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
+});
+
+// --- NEW ROUTES ADDED BELOW ---
+
+// @route   GET /api/internship/tasks
+// @desc    Get assigned tasks for student
+router.get('/tasks', protect, async (req, res) => {
+    // Mock Data - In a real app, fetch from a 'Tasks' table based on user role/id
+    const tasks = [
+        { id: 1, title: "Frontend UI Design", status: "Pending", deadline: "2023-11-01" },
+        { id: 2, title: "API Integration", status: "Completed", deadline: "2023-10-25" }
+    ];
+    res.json({ success: true, data: tasks });
+});
+
+// @route   POST /api/internship/task/submit
+// @desc    Submit a task solution
+router.post('/task/submit', protect, async (req, res) => {
+    const { taskId, githubLink } = req.body;
+    // Logic to save submission to DB would go here
+    res.json({ success: true, message: "Task submitted successfully" });
 });
 
 module.exports = router;
