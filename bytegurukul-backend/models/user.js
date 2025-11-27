@@ -30,20 +30,27 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
-    role: { // Student, Instructor, Admin
+    role: { 
       type: DataTypes.STRING,
       defaultValue: 'Student'
+    },
+    // --- NEW FIELDS FOR PASSWORD RESET ---
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    resetPasswordExpire: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     hooks: {
-      // Hash password before creating
       beforeCreate: async (user) => {
         if (user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
       },
-      // Hash password before updating (if changed)
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
           const salt = await bcrypt.genSalt(10);
@@ -53,9 +60,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   });
 
-  // Instance method to compare password
-  User.prototype.validPassword = function(password) {
-    return bcrypt.compareSync(password, this.password);
+  User.prototype.validPassword = async function(password) {
+    return await bcrypt.compare(password, this.password);
   };
 
   return User;

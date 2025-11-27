@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    code: { // Added Course Code
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     description: {
       type: DataTypes.TEXT,
       allowNull: true
@@ -18,16 +22,31 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0.00
     },
-    // Foreign key to link course to an Instructor (User)
+    category: { // Added Category
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'Programming'
+    },
+    level: { // Added Level
+      type: DataTypes.STRING,
+      defaultValue: 'Beginner'
+    },
+    duration: { // Added Duration
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    thumbnail: { // Added Image Path
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     instructorId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', // 'Users' refers to table name
+            model: 'Users', 
             key: 'id',
         }
     }
-    // Add other fields like category, duration, image, etc.
   });
 
   return Course;

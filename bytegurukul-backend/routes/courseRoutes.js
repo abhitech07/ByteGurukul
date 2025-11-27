@@ -2,134 +2,95 @@ const express = require('express');
 const router = express.Router();
 const { Course, User, Enrollment } = require('../models');
 const { protect } = require('../middleware/auth');
-
+const upload = require('../middleware/upload'); // Pichle step mein banaya tha
 
 // @route GET /api/courses
-// Get all courses with filters
+// Get all courses
 router.get('/', async (req, res) => {
   try {
     const where = {};
-    if (req.query.category) {
-        where.category = req.query.category;
-    }
+    if (req.query.category) where.category = req.query.category;
 
     const courses = await Course.findAll({
         where,
-        include: [{ model: User, as: 'instructor', attributes: ['username'] }] 
+        include: [{ model: User, as: 'instructor', attributes: ['username', 'name'] }] 
     });
 
-    res.json({ success: true, data: courses, message: 'Courses fetched successfully' });
+    res.json({ success: true, data: courses });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// @route GET /api/courses/:id
-// Get single course by ID
-router.get('/:id', async (req, res) => {
+// @route POST /api/courses (Create Course with Image)
+router.post('/', protect, upload.single('thumbnail'), async (req, res) => {
     try {
-        const course = await Course.findByPk(req.params.id);
-
-        if (course) {
-            res.json({ success: true, data: course, message: 'Course fetched successfully' });
-        } else {
-            res.status(404).json({ success: false, message: 'Course not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-
-// @route POST /api/courses
-// Create new course 
-router.post('/', protect, async (req, res) => {
-    const { title, description, price } = req.body;
-    
-    try {
-        // FIX: Check if user is authorized to create a course
+        // 1. Check Authorization
         const user = await User.findByPk(req.user);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        
-        // Allow Instructors and Admins
         if (user.role !== 'Instructor' && user.role !== 'Admin') {
-            return res.status(403).json({ success: false, message: 'Access denied. Instructors only.' });
+            return res.status(403).json({ message: 'Access denied. Instructors only.' });
         }
 
+        // 2. Get Data from Body & File
+        const { title, code, description, price, category, level, duration } = req.body;
+        const thumbnail = req.file ? `/uploads/${req.file.filename}` : null;
+
+        // 3. Create Course
         const course = await Course.create({
             title,
+            code,
             description,
             price,
-            instructorId: req.user // Use the ID from the token
+            category,
+            level,
+            duration,
+            thumbnail,
+            instructorId: req.user
         });
 
         res.status(201).json({ success: true, data: course, message: 'Course created successfully' });
     } catch (error) {
+        console.error(error);
         res.status(400).json({ success: false, message: error.message });
     }
 });
 
 // @route POST /api/courses/:courseId/enroll
-// Enroll in course
 router.post('/:courseId/enroll', protect, async (req, res) => {
-    const courseId = req.params.courseId;
-    const userId = req.user;
-
     try {
-        // 1. Check if already enrolled
-        const existingEnrollment = await Enrollment.findOne({ where: { courseId, userId } });
-        if (existingEnrollment) {
-            return res.status(400).json({ success: false, message: 'You are already enrolled in this course.' });
+        const { courseId } = req.params;
+        const userId = req.user;
+
+        const existing = await Enrollment.findOne({ where: { courseId, userId } });
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Already enrolled.' });
         }
         
-        // 2. Create new enrollment
         const enrollment = await Enrollment.create({ courseId, userId });
-
-        res.status(201).json({ success: true, data: enrollment, message: 'Successfully enrolled in the course.' });
+        res.status(201).json({ success: true, data: enrollment });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// --- NEW ROUTES ADDED BELOW ---
-
-// @route   PUT /api/courses/update/:id
-// @desc    Update course details (Instructor only)
-router.put('/update/:id', protect, async (req, res) => {
-    try {
-        const course = await Course.findByPk(req.params.id);
-        if (!course) return res.status(404).json({ message: "Course not found" });
-
-        // Optional: Check ownership (if only creator can edit)
-        // if (course.instructorId != req.user) return res.status(403).json({ message: "Not authorized" });
-
-        await course.update(req.body);
-        res.json({ success: true, message: "Course updated", data: course });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// @route   DELETE /api/courses/:id
-// @desc    Delete course
-router.delete('/:id', protect, async (req, res) => {
-    try {
-        const course = await Course.findByPk(req.params.id);
-        if (!course) return res.status(404).json({ message: "Course not found" });
-
-        await course.destroy();
-        res.json({ success: true, message: "Course deleted" });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// @route   GET /api/courses/instructor/my-courses
-// @desc    Get courses created by logged in instructor
+// Get Instructor's Courses
 router.get('/instructor/my-courses', protect, async (req, res) => {
     try {
         const courses = await Course.findAll({ where: { instructorId: req.user } });
         res.json({ success: true, data: courses });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get Single Course
+router.get('/:id', async (req, res) => {
+    try {
+        const course = await Course.findByPk(req.params.id, {
+             include: [{ model: User, as: 'instructor', attributes: ['name'] }]
+        });
+        if (course) res.json({ success: true, data: course });
+        else res.status(404).json({ success: false, message: 'Course not found' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

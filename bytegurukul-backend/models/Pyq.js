@@ -4,23 +4,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    subjectCode: {
+    year: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    year: {
-      type: DataTypes.STRING, // e.g., "2023-24"
+    branch: {
+      type: DataTypes.STRING,
       allowNull: false
     },
     semester: {
-      type: DataTypes.STRING, // e.g., "3rd", "4th"
+      type: DataTypes.INTEGER,
       allowNull: false
     },
-    type: {
-      type: DataTypes.ENUM('Regular', 'Carry Over'),
-      defaultValue: 'Regular'
+    filename: { // File ka naam store karenge
+      type: DataTypes.STRING,
+      allowNull: false
     },
-    fileUrl: { // Path to the downloaded PDF
+    filePath: { // Pura path store karenge access ke liye
       type: DataTypes.STRING,
       allowNull: false
     }

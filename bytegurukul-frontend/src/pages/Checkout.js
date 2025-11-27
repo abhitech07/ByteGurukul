@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { studentService } from '../services/studentService'; // IMPORT ADDED
 import { FaCreditCard, FaWallet, FaUniversity, FaLock, FaCheckCircle, FaUserCircle, FaShoppingBag } from 'react-icons/fa';
 
 function Checkout() {
-  const { cart, getCartTotal, createOrder } = useCart();
+  // Note: Added clearCart from context to empty cart after purchase
+  const { cart, getCartTotal, clearCart } = useCart(); 
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -13,7 +15,6 @@ function Checkout() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const subtotal = getCartTotal();
-  // --- REMOVED: platformFee and gst calculation ---
   const total = subtotal; 
 
   const paymentOptions = [
@@ -31,6 +32,7 @@ function Checkout() {
     }).format(amount);
   };
 
+  // --- MODIFIED HANDLE ORDER FUNCTION ---
   const handlePlaceOrder = async () => {
     if (!user) {
       alert('Please login to place an order');
@@ -38,20 +40,61 @@ function Checkout() {
       return;
     }
 
+    if (cart.length === 0) return;
+
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      const orderData = {
-        user: user,
-        paymentMethod: paymentMethod,
-        shippingAddress: 'Digital Delivery'
-      };
+    try {
+      // Process each item in the cart
+      // (Backend currently handles 1 course at a time, so we loop)
+      for (const item of cart) {
+          
+        // 1. Create Order
+        const response = await studentService.createOrder(item.id);
+        
+        if (response.success && response.order) {
+            const { order } = response;
 
-      const order = createOrder(orderData);
+            // Check if it is a Mock Order (No Razorpay ID)
+            if (order.isMock) {
+                console.log(`Processing Mock Payment for ${item.title}...`);
+                
+                const verifyData = {
+                    razorpay_order_id: order.id,
+                    razorpay_payment_id: "mock_pay_" + Date.now(),
+                    razorpay_signature: "mock_sig",
+                    courseId: item.id,
+                    isMock: true
+                };
+                
+                // 2. Verify & Enroll
+                await studentService.verifyOrder(verifyData);
+            } else {
+                // Real Razorpay logic would go here in future
+                alert("Razorpay ID not found. Using backend Mock mode.");
+            }
+        }
+      }
+
+      // Order Complete
       setIsProcessing(false);
-      navigate('/order-success', { state: { order } });
-    }, 2000);
+      
+      // Clear Cart locally
+      if(clearCart) clearCart(); 
+
+      // Redirect
+      const dummyOrderData = {
+        id: "ORDER-" + Date.now(),
+        total: total,
+        date: new Date().toLocaleDateString()
+      };
+      navigate('/order-success', { state: { order: dummyOrderData } });
+
+    } catch (error) {
+      console.error("Payment Failed:", error);
+      setIsProcessing(false);
+      alert(error.message || "Something went wrong during checkout.");
+    }
   };
 
   if (cart.length === 0) {
@@ -99,7 +142,6 @@ function Checkout() {
 
           <div style={styles.orderTotal}>
             
-            {/* Final Total (Now just equals Subtotal) */}
             <div style={styles.totalRowFinal}>
               <strong style={{fontSize: '24px'}}>Total Payable:</strong>
               <strong style={styles.finalTotal}>
@@ -220,7 +262,7 @@ const styles = {
   },
   checkoutLayout: {
     display: 'grid',
-    gridTemplateColumns: '1.2fr 1fr', // Slightly wider summary column
+    gridTemplateColumns: '1.2fr 1fr', 
     gap: '50px',
     maxWidth: '1100px',
     margin: '0 auto',
@@ -240,7 +282,7 @@ const styles = {
     boxShadow: 'var(--shadow-lg)',
     border: '1px solid #dbeafe',
     position: 'sticky',
-    top: '100px' // Keep it sticky
+    top: '100px'
   },
   sectionTitle: {
     color: 'var(--text-primary)',
@@ -388,7 +430,6 @@ const styles = {
   }
 };
 
-// Add hover and focus styles
 const interactiveStyle = `
   @media (hover: hover) {
     .payment-option:hover {

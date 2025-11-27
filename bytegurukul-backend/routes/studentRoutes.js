@@ -1,58 +1,120 @@
 const express = require('express');
 const router = express.Router();
-const { Course, Enrollment } = require('../models');
+const { Course, Enrollment, User } = require('../models'); 
 const { protect } = require('../middleware/auth');
+const crypto = require('crypto');
+
+// Razorpay (Try-Catch block taaki agar keys na ho to crash na kare)
+let razorpay = null;
+try {
+    const Razorpay = require('razorpay');
+    if(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+        razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+    }
+} catch (err) {
+    console.log("Razorpay module not found or keys missing. Running in Mock Mode.");
+}
 
 // @route   GET /api/student/my-learnings
-// @desc    Get enrolled courses
 router.get('/my-learnings', protect, async (req, res) => {
     try {
-        // Fetch enrollments along with Course details
-        const enrollments = await Enrollment.findAll({
-            where: { userId: req.user },
-            // Note: Iske liye models/index.js mein associations set honi chahiye
-            // Enrollment.belongsTo(Course)
-            // include: [{ model: Course }] 
-        });
+        const enrollments = await Enrollment.findAll({ where: { userId: req.user } });
+        if (!enrollments.length) return res.json({ success: true, data: [] });
 
-        // Agar associations set nahi hain toh manual fetch (Temporary fix):
         const courseIds = enrollments.map(e => e.courseId);
         const courses = await Course.findAll({ where: { id: courseIds } });
 
         res.json({ success: true, data: courses });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Server Error" });
     }
 });
 
 // @route   POST /api/student/order/create
-// @desc    Create Razorpay Order (Dummy implementation)
+// @desc    Create Order (Real or Mock)
 router.post('/order/create', protect, async (req, res) => {
     try {
-        const { amount } = req.body;
-        // Yahan Razorpay instance use karke order create karte hain
-        // const order = await razorpay.orders.create({ ... })
+        const { courseId } = req.body;
+        const course = await Course.findByPk(courseId);
         
-        const dummyOrder = {
-            id: "order_" + Date.now(),
-            amount: amount * 100,
-            currency: "INR"
+        if (!course) return res.status(404).json({ message: "Course not found" });
+
+        const alreadyEnrolled = await Enrollment.findOne({
+            where: { userId: req.user, courseId: courseId }
+        });
+
+        if (alreadyEnrolled) {
+            return res.status(400).json({ message: "You are already enrolled" });
+        }
+
+        // --- MOCK MODE (Agar Razorpay keys nahi hain) ---
+        if (!razorpay) {
+            console.log("⚠️ Creating MOCK Order (No Razorpay Keys)");
+            return res.json({
+                success: true,
+                order: {
+                    id: "order_mock_" + Date.now(),
+                    amount: course.price * 100,
+                    currency: "INR",
+                    isMock: true // Frontend ko batane ke liye ki fake hai
+                }
+            });
+        }
+
+        // --- REAL MODE ---
+        const options = {
+            amount: Number(course.price) * 100,
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`
         };
-        
-        res.json({ success: true, order: dummyOrder });
+
+        const order = await razorpay.orders.create(options);
+        res.json({ success: true, order });
+
     } catch (error) {
+        console.error("Order Error:", error);
         res.status(500).json({ message: error.message });
     }
 });
 
-// @route   GET /api/student/certificates
-// @desc    Get list of certificates
-router.get('/certificates', protect, async (req, res) => {
-    // Mock Data - Real project mein "Certificate" model hoga
-    const certificates = [
-        { id: 1, courseName: "Full Stack Web Dev", date: "2023-10-12", url: "/certs/1.pdf" }
-    ];
-    res.json({ success: true, data: certificates });
+// @route   POST /api/student/order/verify
+// @desc    Verify & Enroll
+router.post('/order/verify', protect, async (req, res) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId, isMock } = req.body;
+
+        let isAuthentic = false;
+
+        // Agar Mock Payment hai toh direct allow karein
+        if (isMock || razorpay_order_id.startsWith('order_mock_')) {
+            isAuthentic = true;
+        } else if (process.env.RAZORPAY_KEY_SECRET) {
+            // Real Verification
+            const body = razorpay_order_id + "|" + razorpay_payment_id;
+            const expectedSignature = crypto
+                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+                .update(body.toString())
+                .digest('hex');
+            isAuthentic = expectedSignature === razorpay_signature;
+        }
+
+        if (isAuthentic) {
+            await Enrollment.findOrCreate({
+                where: { userId: req.user, courseId: courseId },
+                defaults: { enrollmentDate: new Date() }
+            });
+
+            return res.json({ success: true, message: "Course Enrolled Successfully!" });
+        } else {
+            return res.status(400).json({ success: false, message: "Payment Verification Failed" });
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 module.exports = router;

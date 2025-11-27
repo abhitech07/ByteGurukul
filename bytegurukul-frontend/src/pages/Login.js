@@ -27,6 +27,12 @@ function Login() {
     }
   };
 
+  // --- NEW FUNCTION FOR SOCIAL LOGIN ---
+  const handleSocialLogin = (provider) => {
+    // Redirect browser to Backend URL
+    window.location.href = `http://localhost:5000/api/auth/${provider}`;
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.loginCard}>
@@ -90,10 +96,18 @@ function Login() {
 
         {/* Social Buttons */}
         <div style={styles.socialButtons}>
-          <button type="button" style={styles.googleButton}>
+          <button 
+            type="button" 
+            style={styles.googleButton}
+            onClick={() => handleSocialLogin('google')} // ADDED ONCLICK
+          >
             <FaGoogle /> Google
           </button>
-          <button type="button" style={styles.githubButton}>
+          <button 
+            type="button" 
+            style={styles.githubButton}
+            onClick={() => handleSocialLogin('github')} // ADDED ONCLICK
+          >
             <FaGithub /> GitHub
           </button>
         </div>

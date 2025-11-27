@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const passport = require('passport'); // ✅ Added Passport import
 const { User } = require('../models');
 const { protect } = require('../middleware/auth'); // Imported middleware
 
@@ -33,7 +34,7 @@ router.post('/login', async (req, res) => {
     console.log(`[Login Found] User: ${user.username} (Role: ${user.role})`);
     
     // 2. Validate Password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.validPassword(password);
     
     if (!isMatch) {
       console.log('❌ [Login Failed] Password hash did not match.');
@@ -50,10 +51,16 @@ router.post('/login', async (req, res) => {
       role: user.role
     };
 
+    // CRITICAL SECURITY FIX: Ensure JWT_SECRET is defined
+    if (!process.env.JWT_SECRET) {
+        console.error("FATAL ERROR: JWT_SECRET is not defined in .env file.");
+        return res.status(500).json({ success: false, message: "Server Configuration Error" });
+    }
+
     // 4. Sign Token
     jwt.sign(
       payload,
-      process.env.JWT_SECRET || 'secret', 
+      process.env.JWT_SECRET, 
       { expiresIn: 3600 },
       (err, token) => {
         if (err) throw err;
@@ -61,7 +68,7 @@ router.post('/login', async (req, res) => {
         console.log(`------------------------------------------------`);
         res.json({
           success: true,
-          token: "Bearer " + token,
+          token: token, // ✅ Fixed: Sending raw token (Frontend adds "Bearer" if needed)
           user: payload
         });
       }
@@ -81,8 +88,7 @@ router.post('/signup', async (req, res) => {
         let user = await User.findOne({ where: { email } });
         if (user) return res.status(400).json({ message: "User already exists" });
 
-        // FIX: Do NOT manually hash here. The User model 'beforeCreate' hook handles it.
-        // Passing plain password to create.
+        // Password hashing handled by Sequelize Hooks in User model
         user = await User.create({
             username: email.split('@')[0] + Date.now(),
             name,
@@ -97,8 +103,6 @@ router.post('/signup', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
-
-// --- NEW ROUTES ADDED BELOW ---
 
 // @route   GET /api/auth/me
 // @desc    Get current logged in user details
@@ -138,7 +142,7 @@ router.put('/change-password', protect, async (req, res) => {
         const user = await User.findByPk(req.user);
 
         // Validate Current Password
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        const isMatch = await user.validPassword(currentPassword);
         if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
 
         // Update password (Hooks in User model will hash this automatically)
@@ -150,5 +154,46 @@ router.put('/change-password', protect, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+// --- SOCIAL LOGIN ROUTES (ADDED) ---
+
+// @route   GET /api/auth/google
+// @desc    Redirect to Google
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// @route   GET /api/auth/google/callback
+// @desc    Google callback
+router.get('/google/callback', 
+  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  (req, res) => {
+    const user = req.user;
+    // Generate JWT
+    const payload = { id: user.id, name: user.name, email: user.email, role: user.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
+    
+    // Redirect to frontend with token
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth-success?token=${token}`);
+  }
+);
+
+// @route   GET /api/auth/github
+// @desc    Redirect to GitHub
+router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+
+// @route   GET /api/auth/github/callback
+// @desc    GitHub callback
+router.get('/github/callback', 
+  passport.authenticate('github', { session: false, failureRedirect: '/login' }),
+  (req, res) => {
+    const user = req.user;
+    const payload = { id: user.id, name: user.name, email: user.email, role: user.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
+
+    // Redirect to frontend with token
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth-success?token=${token}`);
+  }
+);
 
 module.exports = router;

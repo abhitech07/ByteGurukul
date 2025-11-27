@@ -13,8 +13,23 @@ function Header() {
   // Helper to safely get the display name
   const getDisplayName = () => {
     if (!user) return '';
-    // Check for 'username' (backend) or 'name' (legacy/frontend fallback)
     return user.username || user.name || 'Student';
+  };
+
+  // 1. FIX: Role ke hisab se sahi Dashboard ka path batane wala function
+  const getDashboardRoute = () => {
+    if (!user) return "/dashboard";
+    
+    // Safety check: agar role undefined hai to empty string maano
+    const role = user.role ? user.role.toLowerCase() : "";
+
+    if (role === 'admin') {
+      return "/admin-dashboard";
+    } else if (role === 'instructor') {
+      return "/instructor/courses"; // Ya /instructor-dashboard agar aapne banaya hai
+    } else {
+      return "/dashboard"; // Default Student Dashboard
+    }
   };
 
   return (
@@ -39,18 +54,23 @@ function Header() {
             Internship
           </Link>
           
-          {/* --- ADDED PYQ PAPERS LINK HERE --- */}
           <Link to="/pyq-papers" style={{ ...styles.navLink, ...(isActive('/pyq-papers') ? styles.activeNavLink : {}) }}>
             PYQ Papers
           </Link>
-          {/* ---------------------------------- */}
 
           <Link to="/projects" style={{ ...styles.navLink, ...(isActive('/projects') ? styles.activeNavLink : {}) }}>
             Projects
           </Link>
           
+          {/* 2. FIX: Dynamic Link jo ab user role ke hisab se change hoga */}
           {user && (
-            <Link to="/dashboard" style={{ ...styles.navLink, ...(isActive('/dashboard') ? styles.activeNavLink : {}) }}>
+            <Link 
+              to={getDashboardRoute()} 
+              style={{ 
+                ...styles.navLink, 
+                ...(isActive(getDashboardRoute()) ? styles.activeNavLink : {}) 
+              }}
+            >
               Dashboard
             </Link>
           )}

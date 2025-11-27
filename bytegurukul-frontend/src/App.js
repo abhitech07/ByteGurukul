@@ -6,6 +6,7 @@ import { CourseProvider } from './contexts/CourseContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/common/Layout';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Page Imports
 import Home from './pages/Home';
@@ -22,6 +23,11 @@ import PYQPapers from './pages/PYQPapers';
 import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/OrderSuccess';
 import StudentOrders from './pages/StudentOrders';
+import AuthSuccess from './pages/AuthSuccess'; 
+
+// ✅ IMPORT FORGOT PASSWORD PAGES
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -32,6 +38,7 @@ import AdminSettings from './pages/AdminSettings';
 import AdminInterviews from "./pages/AdminInterviews"; 
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminReports from './pages/AdminReports';
+import AdminPYQ from './pages/AdminPYQ'; 
 
 // Instructor Pages
 import InstructorCourses from "./pages/InstructorCourses";
@@ -76,53 +83,196 @@ function App() {
                     <Route path="/pyq-papers" element={<PYQPapers />} />
                     <Route path="/courses" element={<Courses />} />
                     <Route path="/courses/:courseId" element={<CourseDetail />} />
-                    <Route path="/learn/:courseId" element={<LearningPage />} />
+                    
+                    <Route path="/learn/:courseId" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <LearningPage />
+                      </ProtectedRoute>
+                    } />
+                    
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     
+                    {/* ✅ FORGOT PASSWORD ROUTES ADDED */}
+                    <Route path="/forgot" element={<ForgotPassword />} />
+                    <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+                    {/* Social Login Handler Route */}
+                    <Route path="/auth-success" element={<AuthSuccess />} />
+
                     {/* Student Protected Routes */}
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/student/orders" element={<StudentOrders />} />
-                    <Route path="/student/notifications" element={<Notifications />} />
-                    <Route path="/student/certificates" element={<Certificates />} />
-                    <Route path="/student/profile" element={<Profile />} />
-                    <Route path="/student/progress" element={<ProgressAnalytics />} />
-                    <Route path="/student/wishlist" element={<Wishlist />} />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/orders" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <StudentOrders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/notifications" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <Notifications />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/certificates" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <Certificates />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/profile" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <Profile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/progress" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <ProgressAnalytics />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/student/wishlist" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <Wishlist />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/cart" element={<Cart />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route path="/order-success" element={<OrderSuccess />} />
+                    
+                    <Route path="/checkout" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <Checkout />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/order-success" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Instructor', 'Admin']}>
+                        <OrderSuccess />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Internship Routes */}
                     <Route path="/internship" element={<InternshipHome />} />
-                    {/* 👇 UPDATED ROUTE: Added /:id parameter to fix "required fields" error */}
-                    <Route path="/internship/apply/:id" element={<InternshipApply />} />
-                    <Route path="/internship/status" element={<InternshipStatus />} />
-                    <Route path="/internship/application-success" element={<InternshipApplicationSuccess />} />
-                    <Route path="/internship/interview" element={<InterviewScheduler />} />
-                    <Route path="/internship/interview-confirmation" element={<InterviewConfirmation />} />
-                    <Route path="/internship/dashboard" element={<InternshipDashboardStudent />} />
-                    <Route path="/internship/chat" element={<RecruiterChat />} />
-                    <Route path="/internship/tasks" element={<InternshipTasks />} />
+                    <Route path="/internship/apply/:id" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InternshipApply />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/status" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InternshipStatus />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/application-success" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InternshipApplicationSuccess />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/interview" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InterviewScheduler />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/interview-confirmation" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InterviewConfirmation />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/dashboard" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InternshipDashboardStudent />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/chat" element={
+                      <ProtectedRoute allowedRoles={['Student', 'Admin']}>
+                        <RecruiterChat />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/internship/tasks" element={
+                      <ProtectedRoute allowedRoles={['Student']}>
+                        <InternshipTasks />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Instructor Routes */}
-                    <Route path="/instructor/courses" element={<InstructorCourses />} />
-                    <Route path="/instructor/courses/create" element={<InstructorCreateCourse />} />
-                    <Route path="/instructor/students" element={<InstructorStudents />} />
-                    <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
-                    <Route path="/instructor/earnings" element={<InstructorEarnings />} />
+                    <Route path="/instructor/courses" element={
+                      <ProtectedRoute allowedRoles={['Instructor', 'Admin']}>
+                        <InstructorCourses />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/instructor/courses/create" element={
+                      <ProtectedRoute allowedRoles={['Instructor', 'Admin']}>
+                        <InstructorCreateCourse />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/instructor/students" element={
+                      <ProtectedRoute allowedRoles={['Instructor', 'Admin']}>
+                        <InstructorStudents />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/instructor/analytics" element={
+                      <ProtectedRoute allowedRoles={['Instructor', 'Admin']}>
+                        <InstructorAnalytics />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/instructor/earnings" element={
+                      <ProtectedRoute allowedRoles={['Instructor', 'Admin']}>
+                        <InstructorEarnings />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Admin Routes */}
-                    <Route path="/admin-dashboard" element={<AdminDashboard />} />
-                    <Route path="/admin/users" element={<AdminUsers />} />
-                    <Route path="/admin/courses" element={<AdminCourses />} />
-                    <Route path="/admin/instructors" element={<AdminInstructors />} />
-                    <Route path="/admin/settings" element={<AdminSettings />} />
-                    <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                    <Route path="/admin/interviews" element={<AdminInterviews />} />
-                    <Route path="/admin/reports" element={<AdminReports />} />
-                    {/* 👇 NEW ROUTE: For managing student applications */}
-                    <Route path="/admin/approvals" element={<AdminApprovals />} />
+                    <Route path="/admin-dashboard" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminUsers />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/courses" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminCourses />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/instructors" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminInstructors />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/settings" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminSettings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/analytics" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminAnalytics />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/interviews" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminInterviews />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/reports" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminReports />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/approvals" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminApprovals />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/admin/pyq" element={
+                      <ProtectedRoute allowedRoles={['Admin']}>
+                        <AdminPYQ />
+                      </ProtectedRoute>
+                    } />
+                    
                   </Routes>
                 </Layout>
               </CourseProvider>
