@@ -8,16 +8,14 @@ const { protect } = require('../middleware/auth');
 // Get all courses with filters
 router.get('/', async (req, res) => {
   try {
-    // Basic filter implementation example:
     const where = {};
     if (req.query.category) {
         where.category = req.query.category;
     }
-    // ... add more filters as needed
 
     const courses = await Course.findAll({
         where,
-        include: [{ model: User, as: 'instructor', attributes: ['username'] }] // Assuming you add instructorId to Course model and relationship
+        include: [{ model: User, as: 'instructor', attributes: ['username'] }] 
     });
 
     res.json({ success: true, data: courses, message: 'Courses fetched successfully' });
@@ -44,15 +42,20 @@ router.get('/:id', async (req, res) => {
 
 
 // @route POST /api/courses
-// Create new course (requires authentication and role check, e.g., Instructor)
+// Create new course 
 router.post('/', protect, async (req, res) => {
     const { title, description, price } = req.body;
     
-    // In a real application, you would check if the user is an instructor here:
-    // const user = await User.findByPk(req.user);
-    // if (user.role !== 'Instructor') return res.status(403).json({ message: 'Forbidden' });
-
     try {
+        // FIX: Check if user is authorized to create a course
+        const user = await User.findByPk(req.user);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // Allow Instructors and Admins
+        if (user.role !== 'Instructor' && user.role !== 'Admin') {
+            return res.status(403).json({ success: false, message: 'Access denied. Instructors only.' });
+        }
+
         const course = await Course.create({
             title,
             description,
@@ -87,7 +90,5 @@ router.post('/:courseId/enroll', protect, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
-// Other routes (updateCourse, deleteCourse) follow a similar pattern, ensuring the user is authorized.
 
 module.exports = router;

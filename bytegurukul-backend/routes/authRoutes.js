@@ -14,7 +14,6 @@ router.post('/login', async (req, res) => {
 
   try {
     // 1. Check if user exists
-    // We use checking for the email explicitly
     const user = await User.findOne({ 
         where: { email }
     });
@@ -31,8 +30,7 @@ router.post('/login', async (req, res) => {
     }
 
     console.log(`[Login Found] User: ${user.username} (Role: ${user.role})`);
-    console.log(`[Debug] Hashed Password from DB: ${user.password.substring(0, 10)}...`);
-
+    
     // 2. Validate Password
     const isMatch = await bcrypt.compare(password, user.password);
     
@@ -82,14 +80,13 @@ router.post('/signup', async (req, res) => {
         let user = await User.findOne({ where: { email } });
         if (user) return res.status(400).json({ message: "User already exists" });
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
+        // FIX: Do NOT manually hash here. The User model 'beforeCreate' hook handles it.
+        // Passing plain password to create.
         user = await User.create({
             username: email.split('@')[0] + Date.now(),
             name,
             email,
-            password: hashedPassword,
+            password: password, 
             role: role || 'student',
             phone: '0000000000' 
         });

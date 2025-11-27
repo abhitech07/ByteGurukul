@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
 import { authService } from "../services/authService"; 
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { initializeApp, getApps } from "firebase/app";
@@ -8,6 +8,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
+  const location = useLocation(); // To check current URL
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -54,11 +55,20 @@ export function AuthProvider({ children }) {
         const storedUser = authService.getCurrentUser();
         if (storedUser) {
           setUser(storedUser);
-          // If user is already logged in, redirect them to the correct dashboard on load
-          const role = (storedUser.role || "").toLowerCase();
-          if (role === "admin") navigate("/admin-dashboard");
-          else if (role === "instructor") navigate("/instructor-dashboard");
-          // NOTE: Navigation to /dashboard is now handled by Layout/Router Guard in App.js
+          
+          // --- FIX START: Only redirect if on a public path ---
+          // If the user is already on /admin/users, DO NOT redirect them.
+          const publicPaths = ["/", "/login", "/signup"];
+          const currentPath = window.location.pathname;
+
+          if (publicPaths.includes(currentPath)) {
+            const role = (storedUser.role || "").toLowerCase();
+            if (role === "admin") navigate("/admin-dashboard");
+            else if (role === "instructor") navigate("/instructor-dashboard");
+            else navigate("/dashboard");
+          }
+          // --- FIX END ---
+          
         }
       } catch (error) {
         console.error("Auth initialization failed:", error);
@@ -80,7 +90,8 @@ export function AuthProvider({ children }) {
     }
     
     return () => unsubscribe();
-  }, [auth, firebaseConfig.apiKey, navigate]);
+    // Removed navigate from dependency array to prevent loops
+  }, [auth, firebaseConfig.apiKey]); 
 
   // 隼 LOGIN (Connects to Backend)
   const login = async (email, password) => {
@@ -88,7 +99,7 @@ export function AuthProvider({ children }) {
       const response = await authService.login({ email, password });
       
       if (response.success) {
-        const userData = response.data;
+        const userData = response.data || response.user; // Handle potential structure diffs
         
         // CRITICAL: Ensure user state is set immediately after success
         setUser(userData); 

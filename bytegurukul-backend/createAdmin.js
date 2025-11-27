@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User, sequelize } = require('./models'); // Adjust path to your models if needed
+const { User, sequelize } = require('./models');
 
 const createAdmin = async () => {
     try {
@@ -10,29 +10,25 @@ const createAdmin = async () => {
         const adminData = {
             username: 'AdminUser',
             email: 'admin@bytegurukul.com',
-            password: 'secureAdminPassword123', // You will use this to login
-            role: 'Admin' // Ensure this matches your Role logic (case-sensitive)
+            password: 'secureAdminPassword123', // Plain text, model will hash it
+            role: 'Admin' 
         };
-
-        // Manually hash the password since we might use bulkCreate or update which bypasses hooks sometimes
-        // or to be explicit.
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(adminData.password, salt);
 
         const existingAdmin = await User.findOne({ where: { email: adminData.email } });
         
         if (existingAdmin) {
             console.log('Admin user already exists. Updating password...');
             // Update the existing user's password
-            existingAdmin.password = hashedPassword;
-            existingAdmin.role = adminData.role; // Ensure role is correct
+            // FIX: Pass plain password. The 'beforeUpdate' hook in User model will hash it.
+            existingAdmin.password = adminData.password;
+            existingAdmin.role = adminData.role; 
             await existingAdmin.save();
             console.log('Admin password updated successfully!');
         } else {
-            // Create new admin with hashed password
+            // Create new admin
+            // FIX: Pass plain password. The 'beforeCreate' hook in User model will hash it.
             const admin = await User.create({
-                ...adminData,
-                password: hashedPassword
+                ...adminData
             });
             console.log(`Admin created successfully! \nEmail: ${admin.email} \nRole: ${admin.role}`);
         }

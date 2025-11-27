@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Pyq } = require('../models');
+const { Pyq, User } = require('../models'); // FIX: Added User to imports
 const { protect } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -15,10 +15,9 @@ if (!fs.existsSync(uploadDir)){
 // Configure Storage for PDFs
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Files will be saved in 'bytegurukul-backend/uploads'
+    cb(null, 'uploads/'); 
   },
   filename: (req, file, cb) => {
-    // Naming: subjectCode-year-timestamp.pdf (sanitized)
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
@@ -30,7 +29,7 @@ const upload = multer({
         if (file.mimetype === 'application/pdf') cb(null, true);
         else cb(new Error('Only PDF files are allowed!'), false);
     },
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+    limits: { fileSize: 10 * 1024 * 1024 } 
 });
 
 // @route   GET /api/pyq
@@ -62,9 +61,16 @@ router.get('/', async (req, res) => {
 
 // @route   POST /api/pyq
 // @desc    Upload a new paper (Admin Only)
-// Note: Add 'admin' middleware here in production
 router.post('/', protect, upload.single('pdfFile'), async (req, res) => {
   try {
+    // FIX: Check for Admin privileges
+    const user = await User.findByPk(req.user);
+    if (!user || user.role !== 'Admin') {
+        // Clean up file if uploaded but user is unauthorized
+        if (req.file) fs.unlinkSync(req.file.path); 
+        return res.status(403).json({ success: false, message: "Access denied. Admins only." });
+    }
+
     console.log("File Upload Request:", req.file);
     console.log("Body Data:", req.body);
 
@@ -74,8 +80,6 @@ router.post('/', protect, upload.single('pdfFile'), async (req, res) => {
         return res.status(400).json({ success: false, message: "Please upload a PDF file" });
     }
 
-    // Create DB Entry with file path
-    // We store '/uploads/filename.pdf' so frontend can access it easily
     const newPyq = await Pyq.create({
       subject,
       subjectCode,

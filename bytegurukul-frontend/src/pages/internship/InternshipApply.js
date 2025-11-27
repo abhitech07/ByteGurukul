@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-// import api from "../../services/api"; // Use your existing API service if configured
-import axios from 'axios'; // Or use axios directly for now
+// FIX: Use the central API service
+import api from "../../services/api"; 
 import InternshipNavbar from "../../components/internship/InternshipNavbar"; 
 import { FaUser, FaEnvelope, FaPhone, FaUniversity, FaFileAlt, FaArrowLeft, FaCheckCircle, FaSpinner } from 'react-icons/fa';
 
@@ -30,18 +30,16 @@ export default function InternshipApply() {
       // Prepare the payload
       const payload = {
         ...form,
-        roleId: id // Include the role ID from the URL
+        roleId: id 
       };
 
-      // --- BACKEND CONNECTION HERE ---
-      // Ensure your backend is running on localhost:5000
-      const response = await axios.post('http://localhost:5000/api/internship/apply', payload);
+      // FIX: Use api.post instead of axios.post
+      const response = await api.post('/internship/apply', payload);
 
-      if (response.data.success) {
-        // Navigate to success page on successful DB entry
+      if (response.success) {
         navigate("/internship/application-success", { 
             state: { 
-                appId: response.data.data.id, // Get real ID from DB
+                appId: response.data.id, 
                 openingId: id 
             }
         });
@@ -49,15 +47,15 @@ export default function InternshipApply() {
 
     } catch (error) {
       console.error("Submission error:", error);
+      // api.js interceptor returns error.data directly often, or error object
       setErrorMessage(
-          error.response?.data?.message || "Failed to submit application. Please check your connection."
+          error.message || "Failed to submit application. Please check your connection."
       );
     } finally {
       setSubmitting(false);
     }
   };
   
-  // ... Keep getRoleTitle and the rest of the JSX (return statement) exactly the same ...
   const getRoleTitle = (id) => {
       switch (id) {
           case 'android': return 'Android Development Internship';
@@ -70,13 +68,11 @@ export default function InternshipApply() {
   const roleTitle = getRoleTitle(id);
 
   return (
-      // ... REST OF YOUR JSX CODE REMAINS THE SAME ...
       <div style={styles.page}>
       <InternshipNavbar />
       <div style={styles.mainContent}>
         <div style={styles.applicationCard}>
             
-          {/* Header Section */}
           <div style={styles.header}>
             <div style={styles.roleInfo}>
               <h1 style={styles.title}>Apply for: {roleTitle}</h1>
@@ -88,14 +84,12 @@ export default function InternshipApply() {
             </Link>
           </div>
           
-          {/* Error Message Display */}
           {errorMessage && (
             <div style={styles.errorBox}>
               {errorMessage}
             </div>
           )}
 
-          {/* Application Form */}
           <form onSubmit={handleSubmit} style={styles.form}>
             
             <h3 style={styles.formSectionTitle}>Personal Information</h3>
@@ -164,7 +158,6 @@ export default function InternshipApply() {
                 />
             </div>
 
-            {/* Actions */}
             <div style={styles.actions}>
               <button 
                 type="submit" 
@@ -197,13 +190,11 @@ export default function InternshipApply() {
   );
 }
 
-// ... Copy the styles object from your original file here ...
 const styles = {
-  // Global/Layout Styles
   page: { 
     fontFamily: "'Poppins', sans-serif", 
     minHeight: "100vh", 
-    backgroundColor: "var(--background)", // Using CSS variable from App.css
+    backgroundColor: "var(--background)", 
     color: "var(--text-primary)",
   },
   mainContent: { 
@@ -211,7 +202,7 @@ const styles = {
     display: 'flex', 
     justifyContent: 'center',
     alignItems: 'flex-start',
-    minHeight: 'calc(100vh - 80px)', // Adjust for header height
+    minHeight: 'calc(100vh - 80px)', 
   },
   applicationCard: {
     width: '100%',
@@ -223,8 +214,6 @@ const styles = {
     boxShadow: "var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.1))", 
     border: '1px solid var(--border, #e6eef8)'
   },
-  
-  // Header and Navigation
   header: { 
     display: "flex", 
     justifyContent: "space-between", 
@@ -258,8 +247,6 @@ const styles = {
     alignItems: 'center',
     transition: 'background-color 0.3s ease'
   },
-
-  // Form Styles
   form: { 
     display: 'flex',
     flexDirection: 'column',
@@ -314,13 +301,11 @@ const styles = {
     resize: 'vertical',
     transition: 'border-color 0.3s ease',
   },
-
-  // Actions
   actions: { 
     display: "flex", 
     gap: 15, 
     marginTop: 15,
-    flexWrap: 'wrap' // Responsive wrapping
+    flexWrap: 'wrap' 
   },
   primaryBtn: { 
     backgroundColor: "var(--primary, #2563eb)", 
@@ -425,7 +410,6 @@ const customStyles = `
   }
 `;
 
-// Append CSS to head to enable dynamic styling and animations
 if (typeof document !== 'undefined') {
     const styleSheet = document.createElement('style');
     styleSheet.innerText = customStyles;
