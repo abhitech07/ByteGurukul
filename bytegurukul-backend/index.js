@@ -16,7 +16,7 @@ const pyqRoutes = require('./routes/pyqRoutes');
 // const studentRoutes = require('./routes/studentRoutes'); // Uncomment if you have this file
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors()); 
@@ -47,7 +47,7 @@ app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
-    // await sequelize.sync({ alter: true }); // Only enable if you changed models
+    await sequelize.sync({ force: true });
     console.log('Database synchronized.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
