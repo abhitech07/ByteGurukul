@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 
 // Inline SVG Icons to replace react-icons dependency completely
 const LinkedInIcon = () => (
@@ -74,14 +75,14 @@ function Footer() {
         <div style={styles.linkSection}>
           <h4 style={styles.heading}>Quick Links</h4>
           {[
-            { label: "Courses", href: "/courses" },
-            { label: "Resources", href: "/resources" },
-            { label: "Projects", href: "/projects" },
-            { label: "Internship", href: "/internship" },
+            { label: "Courses", to: "/Courses" },
+            { label: "Resources", to: "/Resources" },
+            { label: "Projects", to: "/Projects" },
+            { label: "Internship", to: "/Internship" },
           ].map((link) => (
-            <a key={link.label} href={link.href} style={styles.link} className="footer-link">
+            <Link key={link.label} to={link.to} style={styles.link} className="footer-link">
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -89,14 +90,14 @@ function Footer() {
         <div style={styles.linkSection}>
           <h4 style={styles.heading}>Support</h4>
           {[
-            { label: "Help Center", href: "/help" },
-            { label: "Contact Us", href: "/contact" },
-            { label: "Privacy Policy", href: "/privacy" },
-            { label: "Terms & Conditions", href: "/terms" },
+            { label: "Help Center", to: "/Help" },
+            { label: "Contact Us", to: "/Contact" },
+            { label: "Privacy Policy", to: "/Privacy" },
+            { label: "Terms & Conditions", to: "/Terms" },
           ].map((link) => (
-            <a key={link.label} href={link.href} style={styles.link} className="footer-link">
+            <Link key={link.label} to={link.to} style={styles.link} className="footer-link">
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
       </div>

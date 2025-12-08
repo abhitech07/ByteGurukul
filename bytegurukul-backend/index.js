@@ -13,7 +13,7 @@ const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const internshipRoutes = require('./routes/internshipRoutes'); 
 const pyqRoutes = require('./routes/pyqRoutes'); 
-// const studentRoutes = require('./routes/studentRoutes'); // Uncomment if you have this file
+const studentRoutes = require('./routes/studentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -39,15 +39,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes); 
 app.use('/api/internship', internshipRoutes); 
 app.use('/api/pyq', pyqRoutes); 
-// app.use('/api/student', studentRoutes); // Uncomment if needed
-
+app.use('/api/student', studentRoutes);
 // Start Server
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   try {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log('Database synchronized.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);

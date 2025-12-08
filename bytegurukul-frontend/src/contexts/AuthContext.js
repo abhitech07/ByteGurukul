@@ -63,9 +63,10 @@ export function AuthProvider({ children }) {
 
           if (publicPaths.includes(currentPath)) {
             const role = (storedUser.role || "").toLowerCase();
-            if (role === "admin") navigate("/admin-dashboard");
-            else if (role === "instructor") navigate("/instructor-dashboard");
-            else navigate("/dashboard");
+            if (user.role === "admin") navigate("/admin/dashboard");
+else if (user.role === "instructor") navigate("/instructor/dashboard");
+else navigate("/student/dashboard");
+
           }
           // --- FIX END ---
           
