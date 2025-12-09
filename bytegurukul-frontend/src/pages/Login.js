@@ -19,7 +19,6 @@ function Login() {
 
     try {
       await login(email, password);
-      navigate("/dashboard");
     } catch (err) {
       setError("Invalid email or password. Please try again.");
     } finally {
