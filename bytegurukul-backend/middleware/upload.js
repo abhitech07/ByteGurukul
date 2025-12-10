@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure upload directory exists
+// FIXED: Use path.resolve/join to ensure absolute path consistency
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -11,10 +12,11 @@ if (!fs.existsSync(uploadDir)) {
 // Configure Storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Files yahan save hongi
+    // FIXED: Use the absolute path variable defined above
+    cb(null, uploadDir); 
   },
   filename: function (req, file, cb) {
-    // File ka naam unique banayein (timestamp + originalname)
+    // File ka naam unique banayein
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname)); 
   }

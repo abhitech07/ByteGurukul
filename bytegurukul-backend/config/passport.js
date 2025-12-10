@@ -19,7 +19,6 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // --- GOOGLE STRATEGY ---
-// Check if keys exist before configuring to avoid crashing
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'dummy_google_id_123') {
   passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
@@ -36,7 +35,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'dummy_goog
             name: profile.displayName,
             email: profile.emails[0].value,
             password: 'social-login-dummy-password', 
-            role: 'Student',
+            role: 'student', // FIXED: Lowercase for consistency
             authProvider: 'google'
           });
         }
@@ -47,7 +46,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'dummy_goog
     }
   ));
 } else {
-  console.log("⚠️  Google Auth skipped: Client ID/Secret not set in .env");
+  console.log("⚠️  Google Auth skipped: Client ID/Secret not set");
 }
 
 // --- GITHUB STRATEGY ---
@@ -71,7 +70,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_ID !== 'dummy_gith
             name: profile.displayName || profile.username,
             email: email,
             password: 'social-login-dummy-password',
-            role: 'Student',
+            role: 'student', // FIXED: Lowercase for consistency
             authProvider: 'github'
           });
         }
@@ -82,7 +81,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_ID !== 'dummy_gith
     }
   ));
 } else {
-  console.log("⚠️  GitHub Auth skipped: Client ID/Secret not set in .env");
+  console.log("⚠️  GitHub Auth skipped: Client ID/Secret not set");
 }
 
 module.exports = passport;

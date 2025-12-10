@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
+import { useNavigate, useLocation } from "react-router-dom"; 
 import { authService } from "../services/authService"; 
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { initializeApp, getApps } from "firebase/app";
@@ -8,7 +8,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const navigate = useNavigate();
-  const location = useLocation(); // To check current URL
+  const location = useLocation(); 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -36,6 +36,7 @@ export function AuthProvider({ children }) {
   // 隼 Load user from localStorage & Firebase on app start
   useEffect(() => {
     const initAuth = async () => {
+      // 1. Firebase Auth Check
       try {
         if (window.__initial_auth_token && auth.currentUser === null) {
            if(firebaseConfig.apiKey !== "AIzaSyD-QMOCK-API-KEY-FOR-DEV-ENV") {
@@ -56,20 +57,22 @@ export function AuthProvider({ children }) {
         if (storedUser) {
           setUser(storedUser);
           
-          // --- FIX START: Only redirect if on a public path ---
-          // If the user is already on /admin/users, DO NOT redirect them.
-          const publicPaths = ["/", "/login", "/signup"];
+          // --- FIX: Use 'storedUser' variable, NOT 'user' state ---
+          const publicPaths = ["/", "/login", "/signup", "/forgot", "/auth-success"];
           const currentPath = window.location.pathname;
 
+          // Only redirect if the user is currently on a public page
           if (publicPaths.includes(currentPath)) {
-            const role = (storedUser.role || "").toLowerCase();
-            if (user.role === "admin") navigate("/admin/dashboard");
-else if (user.role === "instructor") navigate("/instructor/dashboard");
-else navigate("/student/dashboard");
-
+            const role = (storedUser.role || "").toLowerCase(); // FIXED: Check storedUser.role
+            
+            if (role === "admin") {
+                navigate("/admin-dashboard");
+            } else if (role === "instructor") {
+                navigate("/instructor/courses"); // Fixed path to match your routes
+            } else {
+                navigate("/dashboard");
+            }
           }
-          // --- FIX END ---
-          
         }
       } catch (error) {
         console.error("Auth initialization failed:", error);
@@ -85,87 +88,57 @@ else navigate("/student/dashboard");
     if (auth.onAuthStateChanged) {
         unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
-                // console.log("Firebase User Connected");
+                // Connected
             }
         });
     }
     
     return () => unsubscribe();
-    // Removed navigate from dependency array to prevent loops
-  }, [auth, firebaseConfig.apiKey]); 
+  }, [auth, firebaseConfig.apiKey]); // Removed 'navigate' to prevent loops
 
-  // 隼 LOGIN (Connects to Backend)
+  // 隼 LOGIN
   const login = async (email, password) => {
     try {
       const response = await authService.login({ email, password });
 
-      console.log('Full Login Response:', response); // DEBUG
-      console.log('Response type:', typeof response); // DEBUG
-      console.log('Response keys:', Object.keys(response)); // DEBUG
-
       if (response.success) {
-        const userData = response.user; // Use response.user directly
-
-        console.log('Login UserData:', userData); // DEBUG
-        console.log('Login Role:', userData?.role); // DEBUG
-        console.log('UserData type:', typeof userData); // DEBUG
-        console.log('UserData keys:', userData ? Object.keys(userData) : 'null'); // DEBUG
-
-        // CRITICAL: Clear any existing stored user to prevent conflicts
+        const userData = response.user; 
+        
         localStorage.removeItem('user');
+        // Save to local storage manually to ensure persistence before navigation
+        if (response.token) {
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('user', JSON.stringify(userData));
+        }
 
-        // CRITICAL: Ensure user state is set immediately after success
         setUser(userData);
 
-        // CRITICAL FIX: Ensure role comparison is case-insensitive
         const role = (userData?.role || "").toLowerCase();
 
-        console.log('Role after toLowerCase:', role); // DEBUG
-        console.log('Navigating to:', role === "admin" ? "/admin-dashboard" : role === "instructor" ? "/instructor-dashboard" : "/dashboard"); // DEBUG
-
         if (role === "admin") {
-            console.log('Navigating to admin dashboard'); // DEBUG
-            alert('Admin detected - navigating to admin dashboard'); // TEMP DEBUG
             navigate("/admin-dashboard", { replace: true });
-        }
-        else if (role === "instructor") {
-             console.log('Navigating to instructor dashboard'); // DEBUG
-             alert('Instructor detected - navigating to instructor dashboard'); // TEMP DEBUG
-             navigate("/instructor-dashboard", { replace: true });
-        }
-        else {
-             console.log('Navigating to student dashboard'); // DEBUG
-             alert('Student detected - navigating to student dashboard'); // TEMP DEBUG
-             // Default student dashboard
+        } else if (role === "instructor") {
+             navigate("/instructor/courses", { replace: true });
+        } else {
              navigate("/dashboard", { replace: true });
         }
-      } else {
-        console.log('Login not successful:', response); // DEBUG
-      }
+      } 
       return response;
     } catch (error) {
-      console.log('Login error:', error); // DEBUG
-      // Re-throw the error so the Login page can display "Invalid credentials"
+      console.log('Login error:', error); 
       throw error;
     }
   };
 
-  // 隼 SIGNUP (Connects to Backend)
+  // 隼 SIGNUP
   const register = async (formData) => {
     try {
       const response = await authService.register(formData);
       
       if (response.success) {
-        const userData = response.data;
-
-        // Manually save session (AuthService does this too, but for surety)
-        if (userData.token) {
-            localStorage.setItem('token', userData.token);
-            localStorage.setItem('user', JSON.stringify(userData));
-        }
-        
-        setUser(userData);
-        navigate("/dashboard");
+        // Automatically login after signup is usually better UX, 
+        // but if your flow requires login page, navigate("/login")
+        navigate("/login"); 
       }
       return response;
     } catch (error) {
