@@ -27,7 +27,8 @@ router.post('/', protect, upload.single('thumbnail'), async (req, res) => {
     try {
         // 1. Check Authorization
         const user = await User.findByPk(req.user);
-        if (user.role !== 'Instructor' && user.role !== 'Admin') {
+        if (user.role.toLowerCase() !== 'instructor' && user.role.toLowerCase() !== 'admin')
+             {
             return res.status(403).json({ message: 'Access denied. Instructors only.' });
         }
 

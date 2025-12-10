@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { FaBars, FaTimes } from 'react-icons/fa'; // FIXED: Imported icons for mobile menu
 
 function Header() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // FIXED: State for mobile menu
 
   const isActive = (path) => location.pathname === path;
 
@@ -16,21 +18,20 @@ function Header() {
     return user.username || user.name || 'Student';
   };
 
-  // 1. FIX: Role ke hisab se sahi Dashboard ka path batane wala function
   const getDashboardRoute = () => {
     if (!user) return "/dashboard";
-    
-    // Safety check: agar role undefined hai to empty string maano
     const role = user.role ? user.role.toLowerCase() : "";
 
     if (role === 'admin') {
       return "/admin-dashboard";
     } else if (role === 'instructor') {
-      return "/instructor/courses"; // Ya /instructor-dashboard agar aapne banaya hai
+      return "/instructor/courses"; 
     } else {
-      return "/dashboard"; // Default Student Dashboard
+      return "/dashboard"; 
     }
   };
+
+  const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
     <header style={styles.header}>
@@ -42,8 +43,8 @@ function Header() {
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav style={styles.nav}>
+        {/* Desktop Navigation */}
+        <nav style={styles.navDesktop}>
           <Link to="/" style={{ ...styles.navLink, ...(isActive('/') ? styles.activeNavLink : {}) }}>
             Home
           </Link>
@@ -62,7 +63,6 @@ function Header() {
             Projects
           </Link>
           
-          {/* 2. FIX: Dynamic Link jo ab user role ke hisab se change hoga */}
           {user && (
             <Link 
               to={getDashboardRoute()} 
@@ -76,9 +76,8 @@ function Header() {
           )}
         </nav>
 
-        {/* Theme and Auth Controls */}
-        <div style={styles.controls}>
-          {/* Theme Toggle */}
+        {/* Controls (Theme & Auth) for Desktop */}
+        <div style={styles.controlsDesktop}>
           <button
             onClick={toggleTheme}
             style={styles.themeButton}
@@ -87,28 +86,50 @@ function Header() {
             {isDarkMode ? '☀️' : '🌙'}
           </button>
 
-          {/* Auth Buttons */}
           <div style={styles.auth}>
             {user ? (
               <>
                 <span style={styles.userWelcome}>Hi, {getDisplayName()}</span>
-                <button onClick={logout} style={styles.logoutBtn}>
-                  Logout
-                </button>
+                <button onClick={logout} style={styles.logoutBtn}>Logout</button>
               </>
             ) : (
               <>
-                <Link to="/login">
-                  <button style={styles.loginBtn}>Login</button>
-                </Link>
-                <Link to="/signup">
-                  <button style={styles.signupBtn}>Sign Up</button>
-                </Link>
+                <Link to="/login"><button style={styles.loginBtn}>Login</button></Link>
+                <Link to="/signup"><button style={styles.signupBtn}>Sign Up</button></Link>
               </>
             )}
           </div>
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button style={styles.hamburgerBtn} onClick={toggleMenu}>
+           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div style={styles.mobileMenu}>
+           <Link to="/" onClick={toggleMenu} style={styles.mobileNavLink}>Home</Link>
+           <Link to="/courses" onClick={toggleMenu} style={styles.mobileNavLink}>Courses</Link>
+           <Link to="/internship" onClick={toggleMenu} style={styles.mobileNavLink}>Internship</Link>
+           <Link to="/pyq-papers" onClick={toggleMenu} style={styles.mobileNavLink}>PYQ Papers</Link>
+           <Link to="/projects" onClick={toggleMenu} style={styles.mobileNavLink}>Projects</Link>
+           {user && <Link to={getDashboardRoute()} onClick={toggleMenu} style={styles.mobileNavLink}>Dashboard</Link>}
+           
+           <div style={styles.mobileControls}>
+              <button onClick={toggleTheme} style={styles.themeButton}>{isDarkMode ? 'Switch Light ☀️' : 'Switch Dark 🌙'}</button>
+              {user ? (
+                <button onClick={() => { logout(); toggleMenu(); }} style={styles.logoutBtn}>Logout ({getDisplayName()})</button>
+              ) : (
+                <div style={{display:'flex', gap:'10px'}}>
+                  <Link to="/login" onClick={toggleMenu}><button style={styles.loginBtn}>Login</button></Link>
+                  <Link to="/signup" onClick={toggleMenu}><button style={styles.signupBtn}>Sign Up</button></Link>
+                </div>
+              )}
+           </div>
+        </div>
+      )}
     </header>
   );
 }
@@ -132,24 +153,61 @@ const styles = {
     maxWidth: '1200px',
     margin: '0 auto',
   },
-  logo: {
-    flexShrink: 0,
-  },
-  logoLink: {
-    textDecoration: 'none',
-  },
+  logo: { flexShrink: 0 },
+  logoLink: { textDecoration: 'none' },
   logoText: {
     color: 'var(--primary)',
     fontSize: '20px',
     fontWeight: 'bold',
     margin: 0,
   },
-  nav: {
+  // Desktop Nav - Hidden on mobile via media query injection logic below or CSS
+  navDesktop: {
     display: 'flex',
     gap: '20px',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+  },
+  controlsDesktop: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  hamburgerBtn: {
+    display: 'none', // Hidden by default, shown on mobile via media query below
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    color: 'var(--text-primary)',
+    cursor: 'pointer'
+  },
+  mobileMenu: {
+    position: 'absolute',
+    top: '60px',
+    left: 0,
+    right: 0,
+    backgroundColor: 'var(--surface)',
+    borderBottom: '1px solid var(--border)',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
+  },
+  mobileNavLink: {
+    textDecoration: 'none',
+    color: 'var(--text-primary)',
+    fontSize: '16px',
+    fontWeight: '500',
+    padding: '8px 0',
+    borderBottom: '1px solid var(--border)'
+  },
+  mobileControls: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    marginTop: '10px'
   },
   navLink: {
     textDecoration: 'none',
@@ -165,11 +223,6 @@ const styles = {
     color: '#fff',
     fontWeight: '600',
   },
-  controls: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
   themeButton: {
     padding: '5px 8px',
     border: '1px solid var(--border)',
@@ -177,7 +230,7 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    transition: 'all 0.2s ease',
+    color: 'var(--text-primary)'
   },
   auth: {
     display: 'flex',
@@ -198,7 +251,6 @@ const styles = {
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: '600',
-    transition: 'all 0.3s ease',
   },
   signupBtn: {
     padding: '6px 12px',
@@ -209,7 +261,6 @@ const styles = {
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: '600',
-    transition: 'all 0.3s ease',
   },
   logoutBtn: {
     padding: '6px 12px',
@@ -220,40 +271,26 @@ const styles = {
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: '600',
-    transition: 'all 0.3s ease',
   },
 };
 
-// Hover Effects (Injected CSS)
-const hoverStyle = `
-  @media (hover: hover) {
-    a:hover:not(.active) {
-      background-color: var(--hover-bg);
-      color: var(--primary);
-    }
-
-    button:hover {
-      transform: scale(1.05);
-    }
-
-    .loginBtn:hover {
-      background-color: var(--primary);
-      color: white;
-    }
-
-    .signupBtn:hover {
-      background-color: var(--primary-dark);
-    }
-
-    .logoutBtn:hover {
-      background-color: var(--error);
-      color: white;
-    }
+// Inject Media Queries for Responsiveness
+const responsiveStyles = `
+  @media (max-width: 768px) {
+    /* Hide desktop nav elements */
+    header nav { display: none !important; }
+    header .auth { display: none !important; } 
+    /* The controls container needs to hide too, except maybe theme toggle? 
+       For simplicity, hide all desktop controls and show hamburger */
+    div[style*="display: flex"][style*="gap: 12px"] { display: none !important; } 
+    
+    /* Show Hamburger */
+    button[style*="display: none"] { display: block !important; }
   }
 `;
 
 const styleSheet = document.createElement('style');
-styleSheet.innerText = hoverStyle;
+styleSheet.innerText = responsiveStyles;
 document.head.appendChild(styleSheet);
 
 export default Header;

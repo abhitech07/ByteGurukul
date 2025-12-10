@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     role: { 
       type: DataTypes.STRING,
-      defaultValue: 'Student'
+      defaultValue: 'student' // FIXED: Changed 'Student' to 'student' for consistency
     },
     // --- NEW FIELDS FOR PASSWORD RESET ---
     resetPasswordToken: {
@@ -50,11 +50,18 @@ module.exports = (sequelize, DataTypes) => {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
+        // Ensure role is lowercase before saving
+        if (user.role) {
+            user.role = user.role.toLowerCase();
+        }
       },
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
+        }
+        if (user.changed('role') && user.role) {
+            user.role = user.role.toLowerCase();
         }
       }
     }

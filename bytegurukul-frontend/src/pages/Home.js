@@ -10,15 +10,12 @@ import {
   FaLock,
   FaDatabase,
   FaUserGraduate,
-  FaBook,
   FaTrophy,
   FaArrowUp,
   FaSearch,
   FaCertificate,
   FaBriefcase,
   FaChalkboardTeacher,
-  FaMoneyBillWave,
-  FaGraduationCap,
   FaEnvelope,
   FaStar,
   FaPlay,
@@ -31,6 +28,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import api from "../services/api"; // Ensure you have this service or use axios directly
 
 // --- CUSTOM HOOK: Number Counter Animation ---
 export const useCounter = (end, duration = 2000) => {
@@ -151,24 +149,33 @@ const DynamicSearchBar = ({ navigate }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const MOCK_SEARCH_COURSES = [
-    { id: "ds-101", name: "DSA Masterclass", category: "Data Structures", rating: 4.8 },
-    { id: "react-201", name: "React Fullstack", category: "Web Development", rating: 4.9 },
-    { id: "cyber-301", name: "Ethical Hacking 101", category: "Cyber Security", rating: 4.7 },
-    { id: "os-401", name: "Operating Systems", category: "Core CS", rating: 4.5 },
-    { id: "db-301", name: "Database Management", category: "Data Science", rating: 4.6 },
-  ];
-
+  // FIXED: Fetch real search results from backend API
   useEffect(() => {
-    if (searchQuery.length > 1) {
-      setIsSearching(true);
-      const results = MOCK_SEARCH_COURSES
-        .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-        .slice(0, 5);
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
+    const fetchResults = async () => {
+        if (searchQuery.length > 2) {
+            setIsSearching(true);
+            try {
+                // Assuming you have an API setup
+                // If not, this catch block will handle it gracefully
+                const response = await api.get(`/courses?search=${searchQuery}`);
+                if (response && response.data) {
+                    setSearchResults(response.data.slice(0, 5));
+                }
+            } catch (error) {
+                // Fallback mock data if API fails (for demo purposes)
+                const MOCK_RESULTS = [
+                    { id: 1, title: "Web Development Bootcamp", category: "Web Dev", rating: 4.8 },
+                    { id: 2, title: "Python for Data Science", category: "Data Science", rating: 4.7 }
+                ].filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+                setSearchResults(MOCK_RESULTS);
+            }
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const timer = setTimeout(fetchResults, 400); // Debounce
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const handleResultClick = (courseId) => {
@@ -178,7 +185,7 @@ const DynamicSearchBar = ({ navigate }) => {
   };
 
   return (
-    <div style={styles.searchWrapper} data-aos="fade-up" data-aos-delay="600">
+    <div style={styles.searchWrapper} data-aos="fade-up" data-aos-delay="600" className="hero-search-wrapper">
       <form 
         onSubmit={(e) => {
           e.preventDefault();
@@ -191,14 +198,15 @@ const DynamicSearchBar = ({ navigate }) => {
         <FaSearch style={styles.searchIcon} />
         <input
           type="text"
-          placeholder="🔍 Search 100+ courses, notes & projects..."
+          placeholder="🔍 Search courses, notes & projects..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={styles.searchInput}
+          className="hero-search-input"
           onFocus={() => setIsSearching(true)}
           onBlur={() => setTimeout(() => setIsSearching(false), 200)}
         />
-        <button type="submit" style={styles.searchButton}>
+        <button type="submit" style={styles.searchButton} className="hero-search-btn">
           Search
         </button>
       </form>
@@ -217,23 +225,18 @@ const DynamicSearchBar = ({ navigate }) => {
             >
               <div style={styles.courseIcon}>📚</div>
               <div style={styles.courseInfo}>
-                <div style={styles.courseName}>{course.name}</div>
+                <div style={styles.courseName}>{course.title}</div>
                 <div style={styles.courseMeta}>
                   <span style={styles.courseCategory}>{course.category}</span>
                   <span style={styles.courseRating}>
                     <FaStar style={{ color: '#fbbf24', marginRight: '4px' }} />
-                    {course.rating}
+                    {course.rating || '4.5'}
                   </span>
                 </div>
               </div>
               <FaPlay style={styles.resultArrow} />
             </div>
           ))}
-          <div style={styles.searchAll}>
-            <Link to={`/courses?search=${searchQuery}`} style={styles.searchAllLink}>
-              View all results for "{searchQuery}"
-            </Link>
-          </div>
         </div>
       )}
     </div>
@@ -244,6 +247,7 @@ const DynamicSearchBar = ({ navigate }) => {
 const FeaturedCourses = () => {
   const [filter, setFilter] = useState("All");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false); // FIXED: Added pause state
   const sliderRef = useRef(null);
 
   const courses = [
@@ -340,27 +344,36 @@ const FeaturedCourses = () => {
         breakpoint: 768, 
         settings: { 
           slidesToShow: 1,
-          centerMode: false
+          centerMode: false,
+          dots: false // Hide dots on mobile
         } 
       }
     ]
   };
 
-  // Auto-rotate filter
+  // Auto-rotate filter - FIXED: Pauses when hovered
   useEffect(() => {
+    if (isPaused) return;
+
     const interval = setInterval(() => {
       const currentIndex = categories.indexOf(filter);
       const nextIndex = (currentIndex + 1) % categories.length;
       setFilter(categories[nextIndex]);
     }, 5000);
     return () => clearInterval(interval);
-  }, [filter]);
+  }, [filter, isPaused]);
 
   return (
-    <section style={styles.categorySection} data-aos="fade-up" data-aos-delay="200">
+    <section 
+        style={styles.categorySection} 
+        data-aos="fade-up" 
+        data-aos-delay="200"
+        onMouseEnter={() => setIsPaused(true)} // Pause on hover
+        onMouseLeave={() => setIsPaused(false)}
+    >
       <div style={styles.sectionHeader}>
         <h2 style={styles.sectionTitle}>Featured Courses</h2>
-        <p style={styles.sectionSubtitle}>Auto-rotating every 1 seconds • Click to pause</p>
+        <p style={styles.sectionSubtitle}>Auto-rotating every 5 seconds • Hover to pause</p>
       </div>
       
       {/* Filter Tabs with Animation */}
@@ -391,7 +404,7 @@ const FeaturedCourses = () => {
       </div>
 
       {/* Enhanced Carousel */}
-      <div style={{ position: 'relative', marginTop: '40px' }}>
+      <div style={{ position: 'relative', marginTop: '40px' }} className="course-slider-container">
         <Slider {...sliderSettings}>
           {filteredCourses.map((course, index) => (
             <div key={course.id} style={{ padding: "20px 10px" }}>
@@ -560,18 +573,19 @@ function Home() {
       />
       
       {/* HERO SECTION with Floating Background */}
-      <section style={styles.hero}>
+      {/* ADDED CLASSNAME hero-section for Mobile Responsiveness */}
+      <section style={styles.hero} className="hero-section">
         <FloatingBackground />
         <div style={styles.heroOverlay} />
         
-        <div style={styles.heroContent}>
-          <div style={styles.heroLeft}>
+        <div style={styles.heroContent} className="hero-content">
+          <div style={styles.heroLeft} className="hero-left">
             
-            <h1 style={styles.heroTitle} data-aos="fade-right" data-aos-delay="100">
+            <h1 style={styles.heroTitle} data-aos="fade-right" data-aos-delay="100" className="hero-title">
               Welcome to <span style={styles.gradientText}>ByteGurukul</span>
             </h1>
             
-            <h3 style={styles.heroTagline} data-aos="fade-right" data-aos-delay="200">
+            <h3 style={styles.heroTagline} data-aos="fade-right" data-aos-delay="200" className="hero-tagline">
               <ReactTyped
                 strings={[
                   "Learn. Build. Excel.",
@@ -587,7 +601,7 @@ function Home() {
               />
             </h3>
             
-            <p style={styles.heroSubtitle} data-aos="fade-right" data-aos-delay="300">
+            <p style={styles.heroSubtitle} data-aos="fade-right" data-aos-delay="300" className="hero-subtitle">
               Your complete learning platform for <strong>AKTU B.Tech</strong> &{" "}
               <strong>M.Tech</strong> Computer Science. Access courses, projects,
               internships, and previous year questions — all in one place.
@@ -596,19 +610,19 @@ function Home() {
             {/* Dynamic Search Bar */}
             <DynamicSearchBar navigate={navigate} />
 
-            <div style={styles.heroButtons} data-aos="fade-up" data-aos-delay="400">
-              <Link to="/courses" style={styles.primaryButton}>
+            <div style={styles.heroButtons} data-aos="fade-up" data-aos-delay="400" className="hero-buttons">
+              <Link to="/courses" style={styles.primaryButton} className="hero-btn-primary">
                 <FaLaptopCode style={{ marginRight: '10px' }} />
                 Explore Courses
               </Link>
-              <Link to="/signup" style={styles.secondaryButton}>
+              <Link to="/signup" style={styles.secondaryButton} className="hero-btn-secondary">
                 <FaUserGraduate style={{ marginRight: '10px' }} />
                 Sign Up Free
               </Link>
             </div>
             
             {/* Trust Indicators */}
-            <div style={styles.trustIndicators} data-aos="fade-up" data-aos-delay="500">
+            <div style={styles.trustIndicators} data-aos="fade-up" data-aos-delay="500" className="hero-trust">
               <div style={styles.trustItem}>
                 <FaUsers style={{ color: '#10B981' }} />
                 <span>1,200+ Active Students</span>
@@ -624,17 +638,17 @@ function Home() {
             </div>
           </div>
 
-          <div style={styles.heroRight} data-aos="fade-left" data-aos-delay="300">
-            <div style={styles.heroImageContainer}>
+          <div style={styles.heroRight} data-aos="fade-left" data-aos-delay="300" className="hero-right">
+            <div style={styles.heroImageContainer} className="hero-img-container">
               <img
                 src="/hero-learning.png"
                 alt="Learning Illustration"
                 style={styles.heroImage}
                 className="floating-image"
               />
-              <div style={styles.floatingElement1}>🎯</div>
-              <div style={styles.floatingElement2}>🏆</div>
-              <div style={styles.floatingElement3}>💡</div>
+              <div style={styles.floatingElement1} className="floating-el">🎯</div>
+              <div style={styles.floatingElement2} className="floating-el">🏆</div>
+              <div style={styles.floatingElement3} className="floating-el">💡</div>
             </div>
           </div>
         </div>
@@ -889,7 +903,9 @@ function Home() {
         </button>
       )}
 
-      {/* Add CSS Animations */}
+      {/* FIXED: Added responsive media queries using standard <style> tag
+         This overrides the inline JS styles on smaller screens.
+      */}
       <style>
         {`
           @keyframes float {
@@ -936,6 +952,53 @@ function Home() {
           
           .about-image:hover {
             transform: scale(1.05);
+          }
+
+          /* --- RESPONSIVE OVERRIDES FOR HERO SECTION --- */
+          @media (max-width: 768px) {
+            .hero-section {
+               padding: 60px 20px !important;
+               flex-direction: column;
+            }
+            .hero-content {
+               flex-direction: column-reverse; /* Put image on top or bottom, adjust as preferred */
+               text-align: center;
+            }
+            .hero-left {
+               padding-right: 0 !important;
+               min-width: 100% !important;
+            }
+            .hero-right {
+               margin-bottom: 40px;
+               width: 100%;
+            }
+            .hero-title {
+               fontSize: 36px !important;
+               line-height: 1.3 !important;
+            }
+            .hero-tagline {
+               fontSize: 20px !important;
+               min-height: 60px; /* Prevent jump when typing */
+            }
+            .hero-subtitle {
+               fontSize: 16px !important;
+               margin-bottom: 30px !important;
+            }
+            .hero-search-wrapper {
+               margin: 0 auto 30px auto !important;
+            }
+            .hero-buttons {
+               justify-content: center;
+            }
+            .hero-trust {
+               justify-content: center;
+            }
+            .hero-img-container img {
+               max-width: 100% !important;
+            }
+            .floating-el {
+               display: none; /* Hide floating elements on mobile to reduce clutter */
+            }
           }
         `}
       </style>

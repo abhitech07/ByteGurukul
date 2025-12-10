@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const passport = require('passport'); // ✅ Added Passport import
+const passport = require('passport'); 
 const { User } = require('../models');
-const { protect } = require('../middleware/auth'); // Imported middleware
+const { protect } = require('../middleware/auth'); 
 
 // @route   POST /api/auth/login
 // @desc    Authenticate user & get token
@@ -25,7 +25,6 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: "User not found with this email" });
     }
 
-    // DEBUGGING: Check if we actually got a password hash
     if (!user.password) {
         console.log('❌ [CRITICAL ERROR] Password field is NULL or undefined. Check your User Model scopes.');
         return res.status(500).json({ success: false, message: "Server Error: Password field missing." });
@@ -48,10 +47,9 @@ router.post('/login', async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role // Role is now consistently lowercase from DB
     };
 
-    // CRITICAL SECURITY FIX: Ensure JWT_SECRET is defined
     if (!process.env.JWT_SECRET) {
         console.error("FATAL ERROR: JWT_SECRET is not defined in .env file.");
         return res.status(500).json({ success: false, message: "Server Configuration Error" });
@@ -68,7 +66,7 @@ router.post('/login', async (req, res) => {
         console.log(`------------------------------------------------`);
         res.json({
           success: true,
-          token: token, // ✅ Fixed: Sending raw token (Frontend adds "Bearer" if needed)
+          token: token, 
           user: payload
         });
       }
@@ -88,13 +86,15 @@ router.post('/signup', async (req, res) => {
         let user = await User.findOne({ where: { email } });
         if (user) return res.status(400).json({ message: "User already exists" });
 
-        // Password hashing handled by Sequelize Hooks in User model
+        // FIXED: Force role to lowercase to match middleware checks
+        const safeRole = role ? role.toLowerCase() : 'student';
+
         user = await User.create({
             username: email.split('@')[0] + Date.now(),
             name,
             email,
             password: password, 
-            role: role || 'student',
+            role: safeRole,
             phone: '0000000000' 
         });
 
@@ -141,11 +141,9 @@ router.put('/change-password', protect, async (req, res) => {
         const { currentPassword, newPassword } = req.body;
         const user = await User.findByPk(req.user);
 
-        // Validate Current Password
         const isMatch = await user.validPassword(currentPassword);
         if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
 
-        // Update password (Hooks in User model will hash this automatically)
         user.password = newPassword; 
         await user.save();
 
@@ -155,34 +153,24 @@ router.put('/change-password', protect, async (req, res) => {
     }
 });
 
-// --- SOCIAL LOGIN ROUTES (ADDED) ---
+// --- SOCIAL LOGIN ROUTES ---
 
-// @route   GET /api/auth/google
-// @desc    Redirect to Google
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-// @route   GET /api/auth/google/callback
-// @desc    Google callback
 router.get('/google/callback', 
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   (req, res) => {
     const user = req.user;
-    // Generate JWT
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
     
-    // Redirect to frontend with token
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/auth-success?token=${token}`);
   }
 );
 
-// @route   GET /api/auth/github
-// @desc    Redirect to GitHub
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 
-// @route   GET /api/auth/github/callback
-// @desc    GitHub callback
 router.get('/github/callback', 
   passport.authenticate('github', { session: false, failureRedirect: '/login' }),
   (req, res) => {
@@ -190,7 +178,6 @@ router.get('/github/callback',
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
 
-    // Redirect to frontend with token
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/auth-success?token=${token}`);
   }

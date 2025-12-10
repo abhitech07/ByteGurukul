@@ -69,6 +69,13 @@ body {
   padding: 0 20px;
 }
 
+/* FIXED: Responsive Padding for Mobile */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 10px;
+  }
+}
+
 .card {
   background: var(--surface);
   border-radius: 8px;
