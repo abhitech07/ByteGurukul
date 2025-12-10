@@ -3,21 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { 
-  Home, 
-  Bell, 
-  Award, 
-  User, 
-  TrendingUp, 
-  Heart, 
-  ShoppingBag,
-  Menu,
-  X,
-  ChevronDown,
-  Sun,
-  Moon,
-  LogOut
-} from 'lucide-react';
 
 export default function StudentNavbar() {
   const { user, logout } = useAuth();
@@ -27,7 +12,6 @@ export default function StudentNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('');
 
   // Handle scroll effect
   useEffect(() => {
@@ -44,15 +28,15 @@ export default function StudentNavbar() {
     setIsDropdownOpen(false);
   }, [location.pathname]);
 
-  // Navigation items with icons
+  // Navigation items with icon classes
   const navItems = [
-    { path: "/dashboard", label: "Home", icon: Home },
-    { path: "/student/notifications", label: "Notifications", icon: Bell, badge: 3 },
-    { path: "/student/certificates", label: "Certificates", icon: Award },
-    { path: "/student/profile", label: "Profile", icon: User },
-    { path: "/student/progress", label: "Progress", icon: TrendingUp },
-    { path: "/student/wishlist", label: "Wishlist", icon: Heart },
-    { path: "/student/orders", label: "Orders", icon: ShoppingBag },
+    { path: "/dashboard", label: "Home", icon: "fas fa-home" },
+    { path: "/student/notifications", label: "Notifications", icon: "fas fa-bell", badge: 3 },
+    { path: "/student/certificates", label: "Certificates", icon: "fas fa-award" },
+    { path: "/student/profile", label: "Profile", icon: "fas fa-user" },
+    { path: "/student/progress", label: "Progress", icon: "fas fa-chart-line" },
+    { path: "/student/wishlist", label: "Wishlist", icon: "fas fa-heart" },
+    { path: "/student/orders", label: "Orders", icon: "fas fa-shopping-bag" },
   ];
 
   const linkStyle = ({ isActive }) => ({
@@ -68,10 +52,6 @@ export default function StudentNavbar() {
     alignItems: 'center',
     gap: '8px',
     position: 'relative',
-    '&:hover': {
-      background: 'var(--hover-bg, rgba(37,99,235,0.05))',
-      transform: 'translateY(-1px)',
-    }
   });
 
   const mobileLinkStyle = ({ isActive }) => ({
@@ -109,7 +89,7 @@ export default function StudentNavbar() {
                 style={linkStyle}
                 className="nav-link"
               >
-                <item.icon size={18} />
+                <i className={item.icon} style={{ fontSize: '16px', width: '20px' }}></i>
                 <span>{item.label}</span>
                 {item.badge && (
                   <span style={styles.badge}>{item.badge}</span>
@@ -124,7 +104,7 @@ export default function StudentNavbar() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            <i className={isMobileMenuOpen ? "fas fa-times" : "fas fa-bars"}></i>
           </button>
 
           {/* User Actions (Desktop) */}
@@ -134,7 +114,7 @@ export default function StudentNavbar() {
               onClick={toggleTheme}
               aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+              <i className={isDarkMode ? "fas fa-sun" : "fas fa-moon"}></i>
             </button>
             
             <div style={styles.userDropdown}>
@@ -150,10 +130,14 @@ export default function StudentNavbar() {
                 <span style={styles.userText}>
                   {user?.name?.split(' ')[0] || 'Student'}
                 </span>
-                <ChevronDown size={16} style={{
-                  transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
-                  transition: 'transform 0.2s'
-                }} />
+                <i 
+                  className="fas fa-chevron-down" 
+                  style={{
+                    fontSize: '12px',
+                    transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform 0.2s'
+                  }}
+                ></i>
               </button>
               
               {isDropdownOpen && (
@@ -171,7 +155,7 @@ export default function StudentNavbar() {
                     style={styles.dropdownItem}
                     onClick={logout}
                   >
-                    <LogOut size={16} />
+                    <i className="fas fa-sign-out-alt" style={{ width: '20px' }}></i>
                     <span>Logout</span>
                   </button>
                 </div>
@@ -198,7 +182,7 @@ export default function StudentNavbar() {
                   style={styles.mobileThemeBtn}
                   onClick={toggleTheme}
                 >
-                  {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+                  <i className={isDarkMode ? "fas fa-sun" : "fas fa-moon"}></i>
                 </button>
               </div>
 
@@ -209,7 +193,7 @@ export default function StudentNavbar() {
                     to={item.path}
                     style={mobileLinkStyle}
                   >
-                    <item.icon size={20} />
+                    <i className={item.icon} style={{ fontSize: '18px', width: '24px' }}></i>
                     <span>{item.label}</span>
                     {item.badge && (
                       <span style={styles.mobileBadge}>{item.badge}</span>
@@ -223,7 +207,7 @@ export default function StudentNavbar() {
                   style={styles.mobileLogoutBtn}
                   onClick={logout}
                 >
-                  <LogOut size={20} />
+                  <i className="fas fa-sign-out-alt"></i>
                   <span>Logout</span>
                 </button>
               </div>
@@ -256,7 +240,7 @@ export default function StudentNavbar() {
           .nav-link {
             padding: 8px;
           }
-          .nav-link svg {
+          .nav-link i {
             margin-right: 0;
           }
         }
@@ -307,6 +291,9 @@ const styles = {
     scrollbarWidth: 'none',
     msOverflowStyle: 'none',
     padding: '4px 0',
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
   },
   
   badge: {
@@ -345,10 +332,7 @@ const styles = {
     cursor: 'pointer',
     color: 'var(--text-primary)',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      background: 'var(--hover-bg)',
-      transform: 'scale(1.05)',
-    },
+    fontSize: '16px',
   },
   
   userDropdown: {
@@ -365,9 +349,6 @@ const styles = {
     padding: '4px 8px 4px 4px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      background: 'var(--hover-bg)',
-    },
   },
   
   userAvatar: {
@@ -451,9 +432,6 @@ const styles = {
     fontWeight: 600,
     fontSize: '14px',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      background: 'rgba(239,68,68,0.1)',
-    },
   },
   
   mobileMenuButton: {
@@ -461,25 +439,22 @@ const styles = {
     background: 'transparent',
     border: '1px solid var(--border)',
     borderRadius: '8px',
-    padding: '8px',
+    padding: '8px 12px',
     cursor: 'pointer',
     color: 'var(--text-primary)',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      background: 'var(--hover-bg)',
-    },
+    fontSize: '18px',
   },
   
   mobileOverlay: {
     position: 'fixed',
-    top: '116px', // Top navbar height + this navbar height
+    top: '116px',
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'var(--overlay)',
+    background: 'rgba(0,0,0,0.5)',
     backdropFilter: 'blur(4px)',
     zIndex: 999,
-    animation: 'fadeIn 0.2s ease',
   },
   
   mobileMenu: {
@@ -537,12 +512,13 @@ const styles = {
     background: 'transparent',
     border: '1px solid var(--border)',
     borderRadius: '8px',
-    padding: '8px',
+    padding: '8px 12px',
     cursor: 'pointer',
     color: 'var(--text-primary)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    fontSize: '16px',
   },
   
   mobileNavItems: {
@@ -589,9 +565,6 @@ const styles = {
     fontWeight: 600,
     fontSize: '15px',
     transition: 'all 0.2s ease',
-    '&:hover': {
-      background: 'rgba(239,68,68,0.1)',
-    },
   },
   
   scrollIndicator: {
@@ -611,33 +584,43 @@ const styles = {
   },
 };
 
-// Media queries
-const mediaQueries = {
-  desktop: '@media (min-width: 1025px)',
-  tablet: '@media (max-width: 1024px) and (min-width: 769px)',
-  mobile: '@media (max-width: 768px)',
-};
-
-// Apply responsive styles
-Object.assign(styles.desktopLinks, {
-  [mediaQueries.tablet]: {
-    gap: '2px',
-  },
-  [mediaQueries.mobile]: {
-    display: 'none',
-  },
-});
-
-Object.assign(styles.mobileMenuButton, {
-  [mediaQueries.mobile]: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
-Object.assign(styles.actions, {
-  [mediaQueries.mobile]: {
-    display: 'none',
-  },
-});
+// Add CSS animations
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @media (max-width: 768px) {
+    .mobileMenuButton {
+      display: flex !important;
+    }
+    
+    .actions {
+      display: none !important;
+    }
+    
+    .nav-link span {
+      display: none !important;
+    }
+  }
+  
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .nav-link span {
+      display: none !important;
+    }
+  }
+`;
+document.head.appendChild(styleSheet);
