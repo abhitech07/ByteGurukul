@@ -6,12 +6,28 @@ const createAdmin = async () => {
         await sequelize.authenticate();
         console.log('Database connected.');
 
+        // Check for secret key
+        const providedSecret = process.argv[2];
+        const expectedSecret = process.env.ADMIN_SECRET_KEY;
+
+        if (!expectedSecret) {
+            console.error('ADMIN_SECRET_KEY not set in environment variables.');
+            return;
+        }
+
+        if (providedSecret !== expectedSecret) {
+            console.error('Invalid secret key. Admin creation denied.');
+            return;
+        }
+
+        console.log('Secret key validated. Proceeding with admin creation.');
+
         // --- CHANGE THESE DETAILS ---
         const adminData = {
             username: 'AdminUser',
             email: 'admin@bytegurukul.com',
             password: 'secureAdminPassword123', // Plain text, model will hash it
-            role: 'Admin' 
+            role: 'admin'
         };
 
         const existingAdmin = await User.findOne({ where: { email: adminData.email } });

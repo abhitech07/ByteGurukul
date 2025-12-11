@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
     enrollmentDate: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
+    },
+    completionDate: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   });
 

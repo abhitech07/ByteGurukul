@@ -16,8 +16,9 @@ db.sequelize = sequelize;
 db.User = require('./user')(sequelize, DataTypes);
 db.Course = require('./course')(sequelize, DataTypes);
 db.Enrollment = require('./enrollment')(sequelize, DataTypes);
+db.Certificate = require('./certificate')(sequelize, DataTypes);
 db.Application = require('./application')(sequelize, DataTypes);
-db.Pyq = require('./Pyq')(sequelize, DataTypes); 
+db.Pyq = require('./Pyq')(sequelize, DataTypes);
 // New Models
 db.Lecture = require('./Lecture')(sequelize, DataTypes);
 db.Task = require('./Task')(sequelize, DataTypes);
