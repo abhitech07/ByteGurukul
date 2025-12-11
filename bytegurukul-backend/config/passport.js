@@ -34,7 +34,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== 'dummy_goog
             username: profile.displayName.replace(/\s+/g, '').toLowerCase() + Date.now(),
             name: profile.displayName,
             email: profile.emails[0].value,
-            password: 'social-login-dummy-password', 
+            password: 'null', 
             role: 'student', // FIXED: Lowercase for consistency
             authProvider: 'google'
           });
@@ -69,7 +69,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_ID !== 'dummy_gith
             username: profile.username,
             name: profile.displayName || profile.username,
             email: email,
-            password: 'social-login-dummy-password',
+            password: 'null',
             role: 'student', // FIXED: Lowercase for consistency
             authProvider: 'github'
           });

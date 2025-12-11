@@ -9,6 +9,7 @@ const passport = require('passport');
 require('./config/passport'); 
 
 // Import Routes
+const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const internshipRoutes = require('./routes/internshipRoutes'); 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize Passport
 app.use(passport.initialize());
+app.use('/api/admin', adminRoutes);
 
 // Serve Static Files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 

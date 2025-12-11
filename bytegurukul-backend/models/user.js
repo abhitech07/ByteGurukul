@@ -18,10 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       unique: true,
       validate: { isEmail: true }
     },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
+    password: { type: DataTypes.STRING, allowNull: true },
     name: {
       type: DataTypes.STRING,
       allowNull: true
@@ -56,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
         }
       },
       beforeUpdate: async (user) => {
-        if (user.changed('password')) {
+        if (user.changed('password')&& user.password) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }
