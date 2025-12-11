@@ -69,10 +69,111 @@ body {
   padding: 0 20px;
 }
 
-/* FIXED: Responsive Padding for Mobile */
+/* Comprehensive Responsive Design */
+
+/* Mobile First: Small phones (320px - 480px) */
 @media (max-width: 480px) {
   .container {
     padding: 0 10px;
+    max-width: 100%;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .card {
+    padding: 15px;
+    margin: 10px 0;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  input, select, textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px;
+  }
+}
+
+/* Tablets (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+    max-width: 100%;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .btn {
+    padding: 9px 18px;
+  }
+}
+
+/* Small Laptops (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+    max-width: 100%;
+  }
+}
+
+/* Large Laptops (1025px - 1440px) */
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .container {
+    max-width: 1200px;
+  }
+}
+
+/* Desktop/Ultra-wide (1441px - 1920px) */
+@media (min-width: 1441px) and (max-width: 1920px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+/* TV/Ultra-wide (1921px+) */
+@media (min-width: 1921px) {
+  .container {
+    max-width: 1600px;
+    padding: 0 40px;
+  }
+
+  body {
+    font-size: 18px;
+  }
+
+  .card {
+    padding: 30px;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    font-smoothing: antialiased;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Print styles */
+@media print {
+  .container {
+    max-width: none;
+    padding: 0;
+  }
+
+  .btn, input, select, textarea {
+    border: 1px solid #000 !important;
   }
 }
 

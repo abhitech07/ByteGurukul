@@ -85,6 +85,8 @@ const styles = {
     color: 'white',
     fontWeight: '500',
     transition: 'opacity 0.3s ease',
+    padding: '8px 12px',
+    borderRadius: '6px',
   },
   activeLink: {
     backgroundColor: "rgba(255,255,255,0.15)",
@@ -110,5 +112,102 @@ const styles = {
     gap: "10px",
   },
 };
+
+// Inject responsive styles
+const responsiveStyles = `
+  /* Mobile (320px - 768px) */
+  @media (max-width: 768px) {
+    .admin-navbar {
+      padding: 12px 15px !important;
+      flex-direction: column !important;
+      gap: 15px !important;
+    }
+
+    .admin-navbar .left {
+      order: 1 !important;
+    }
+
+    .admin-navbar .center {
+      order: 2 !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+      width: 100% !important;
+    }
+
+    .admin-navbar .link {
+      padding: 10px 15px !important;
+      font-size: 14px !important;
+      width: 100% !important;
+      text-align: center !important;
+    }
+
+    .admin-navbar .logo {
+      font-size: 18px !important;
+    }
+
+    .admin-navbar .adminText {
+      font-size: 14px !important;
+    }
+  }
+
+  /* Tablet (769px - 1024px) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .admin-navbar {
+      padding: 15px 20px !important;
+    }
+
+    .admin-navbar .center {
+      gap: 12px !important;
+    }
+
+    .admin-navbar .link {
+      padding: 8px 10px !important;
+      font-size: 14px !important;
+    }
+  }
+
+  /* Desktop (1025px - 1440px) */
+  @media (min-width: 1025px) and (max-width: 1440px) {
+    .admin-navbar {
+      padding: 18px 30px !important;
+    }
+  }
+
+  /* Large Desktop (1441px - 1920px) */
+  @media (min-width: 1441px) and (max-width: 1920px) {
+    .admin-navbar {
+      padding: 20px 40px !important;
+    }
+
+    .admin-navbar .link {
+      padding: 10px 14px !important;
+      font-size: 16px !important;
+    }
+  }
+
+  /* TV/Ultra-wide (1921px+) */
+  @media (min-width: 1921px) {
+    .admin-navbar {
+      padding: 25px 50px !important;
+    }
+
+    .admin-navbar .link {
+      padding: 12px 16px !important;
+      font-size: 17px !important;
+    }
+
+    .admin-navbar .logo {
+      font-size: 24px !important;
+    }
+
+    .admin-navbar .adminText {
+      font-size: 18px !important;
+    }
+  }
+`;
+
+const styleSheet = document.createElement('style');
+styleSheet.innerText = responsiveStyles;
+document.head.appendChild(styleSheet);
 
 export default AdminNavbar;

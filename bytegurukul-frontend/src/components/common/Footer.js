@@ -194,7 +194,7 @@ const styles = {
   },
 };
 
-/* ✨ Scoped Hover Animations */
+/* ✨ Scoped Hover Animations and Responsive Styles */
 const hoverStyles = `
   /* Target only footer links to prevent global pollution */
   .bytegurukul-footer .footer-link:hover {
@@ -208,14 +208,118 @@ const hoverStyles = `
     transform: translateY(-3px) scale(1.1);
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
   }
-  
+
   /* 🛑 FIX: Ensure text remains white on click/focus */
-  .bytegurukul-footer a:active, 
+  .bytegurukul-footer a:active,
   .bytegurukul-footer a:focus {
     background-color: transparent !important;
     color: #ffffff !important;
     outline: none !important;
     box-shadow: none !important;
+  }
+
+  /* Responsive Footer Styles */
+
+  /* Mobile (320px - 768px) */
+  @media (max-width: 768px) {
+    .bytegurukul-footer {
+      padding: 40px 15px 20px !important;
+    }
+
+    .bytegurukul-footer .container {
+      flex-direction: column !important;
+      gap: 30px !important;
+    }
+
+    .bytegurukul-footer .brand {
+      font-size: 24px !important;
+      text-align: center !important;
+    }
+
+    .bytegurukul-footer .desc {
+      font-size: 14px !important;
+      text-align: center !important;
+      max-width: none !important;
+    }
+
+    .bytegurukul-footer .socialIcons {
+      justify-content: center !important;
+    }
+
+    .bytegurukul-footer .linkSection {
+      text-align: center !important;
+    }
+
+    .bytegurukul-footer .heading {
+      font-size: 16px !important;
+    }
+
+    .bytegurukul-footer .link {
+      font-size: 14px !important;
+    }
+
+    .bytegurukul-footer .bottomBar {
+      text-align: center !important;
+      margin-top: 30px !important;
+      padding-top: 15px !important;
+    }
+
+    .bytegurukul-footer .copyText {
+      font-size: 12px !important;
+    }
+  }
+
+  /* Tablet (769px - 1024px) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .bytegurukul-footer .container {
+      gap: 35px !important;
+    }
+
+    .bytegurukul-footer .brand {
+      font-size: 26px !important;
+    }
+
+    .bytegurukul-footer .desc {
+      font-size: 14px !important;
+    }
+  }
+
+  /* Desktop (1025px - 1440px) */
+  @media (min-width: 1025px) and (max-width: 1440px) {
+    .bytegurukul-footer .container {
+      gap: 40px !important;
+    }
+  }
+
+  /* TV/Ultra-wide (1921px+) */
+  @media (min-width: 1921px) {
+    .bytegurukul-footer {
+      padding: 80px 40px 40px !important;
+    }
+
+    .bytegurukul-footer .container {
+      gap: 60px !important;
+    }
+
+    .bytegurukul-footer .brand {
+      font-size: 32px !important;
+    }
+
+    .bytegurukul-footer .desc {
+      font-size: 16px !important;
+    }
+
+    .bytegurukul-footer .heading {
+      font-size: 20px !important;
+    }
+
+    .bytegurukul-footer .link {
+      font-size: 16px !important;
+    }
+
+    .bytegurukul-footer .copyText {
+      font-size: 16px !important;
+    }
   }
 `;
 

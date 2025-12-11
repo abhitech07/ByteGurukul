@@ -584,7 +584,7 @@ const styles = {
   },
 };
 
-// Add CSS animations
+// Add CSS animations and responsive styles
 const styleSheet = document.createElement('style');
 styleSheet.textContent = `
   @keyframes slideDown {
@@ -597,29 +597,342 @@ styleSheet.textContent = `
       transform: translateY(0);
     }
   }
-  
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-  
+
+  /* Mobile (320px - 768px) */
   @media (max-width: 768px) {
-    .mobileMenuButton {
+    .student-navbar .nav {
+      padding: 0 10px !important;
+    }
+
+    .student-navbar .wrapper {
+      padding: 0 15px !important;
+      min-height: 50px !important;
+    }
+
+    .student-navbar .desktopLinks {
+      display: none !important;
+    }
+
+    .student-navbar .mobileMenuButton {
       display: flex !important;
     }
-    
-    .actions {
+
+    .student-navbar .actions {
       display: none !important;
     }
-    
-    .nav-link span {
-      display: none !important;
+
+    .student-navbar .mobileOverlay {
+      top: 106px !important;
+    }
+
+    .student-navbar .mobileMenu {
+      width: 280px !important;
+    }
+
+    .student-navbar .mobileMenuHeader {
+      padding: 15px !important;
+    }
+
+    .student-navbar .mobileUserInfo {
+      gap: 10px !important;
+    }
+
+    .student-navbar .mobileAvatar {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .mobileUserName {
+      font-size: 14px !important;
+    }
+
+    .student-navbar .mobileUserEmail {
+      font-size: 12px !important;
+    }
+
+    .student-navbar .mobileThemeBtn {
+      padding: 6px 10px !important;
+      font-size: 14px !important;
+    }
+
+    .student-navbar .mobileNavItems {
+      padding: 15px !important;
+    }
+
+    .student-navbar .mobileLinkStyle {
+      padding: 12px 18px !important;
+      font-size: 15px !important;
+    }
+
+    .student-navbar .mobileMenuFooter {
+      padding: 15px !important;
+    }
+
+    .student-navbar .mobileLogoutBtn {
+      padding: 12px !important;
+      font-size: 14px !important;
     }
   }
-  
+
+  /* Tablet (769px - 1024px) */
   @media (min-width: 769px) and (max-width: 1024px) {
-    .nav-link span {
-      display: none !important;
+    .student-navbar .nav {
+      padding: 0 15px !important;
+    }
+
+    .student-navbar .wrapper {
+      padding: 0 20px !important;
+      min-height: 52px !important;
+    }
+
+    .student-navbar .desktopLinks {
+      gap: 2px !important;
+    }
+
+    .student-navbar .linkStyle {
+      padding: 8px 14px !important;
+      font-size: 14px !important;
+    }
+
+    .student-navbar .actions {
+      margin-left: 15px !important;
+    }
+
+    .student-navbar .themeBtn {
+      width: 36px !important;
+      height: 36px !important;
+      font-size: 14px !important;
+    }
+
+    .student-navbar .userAvatar {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 12px !important;
+    }
+
+    .student-navbar .userText {
+      font-size: 13px !important;
+    }
+
+    .student-navbar .dropdownMenu {
+      width: 260px !important;
+    }
+
+    .student-navbar .dropdownAvatar {
+      width: 44px !important;
+      height: 44px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .dropdownName {
+      font-size: 14px !important;
+    }
+
+    .student-navbar .dropdownEmail {
+      font-size: 12px !important;
+    }
+
+    .student-navbar .dropdownItem {
+      padding: 10px !important;
+      font-size: 13px !important;
+    }
+  }
+
+  /* Desktop (1025px - 1440px) */
+  @media (min-width: 1025px) and (max-width: 1440px) {
+    .student-navbar .nav {
+      padding: 0 20px !important;
+    }
+
+    .student-navbar .wrapper {
+      max-width: 1250px !important;
+      padding: 0 20px !important;
+    }
+  }
+
+  /* Large Desktop (1441px - 1920px) */
+  @media (min-width: 1441px) and (max-width: 1920px) {
+    .student-navbar .nav {
+      padding: 0 25px !important;
+    }
+
+    .student-navbar .wrapper {
+      max-width: 1400px !important;
+      padding: 0 25px !important;
+      min-height: 58px !important;
+    }
+
+    .student-navbar .linkStyle {
+      padding: 11px 17px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .actions {
+      margin-left: 25px !important;
+    }
+
+    .student-navbar .themeBtn {
+      width: 42px !important;
+      height: 42px !important;
+      font-size: 17px !important;
+    }
+
+    .student-navbar .userAvatar {
+      width: 34px !important;
+      height: 34px !important;
+      font-size: 15px !important;
+    }
+
+    .student-navbar .userText {
+      font-size: 15px !important;
+    }
+
+    .student-navbar .dropdownMenu {
+      width: 300px !important;
+    }
+
+    .student-navbar .dropdownAvatar {
+      width: 52px !important;
+      height: 52px !important;
+      font-size: 19px !important;
+    }
+
+    .student-navbar .dropdownName {
+      font-size: 16px !important;
+    }
+
+    .student-navbar .dropdownEmail {
+      font-size: 14px !important;
+    }
+
+    .student-navbar .dropdownItem {
+      padding: 13px !important;
+      font-size: 15px !important;
+    }
+  }
+
+  /* TV/Ultra-wide (1921px+) */
+  @media (min-width: 1921px) {
+    .student-navbar .nav {
+      padding: 0 40px !important;
+    }
+
+    .student-navbar .wrapper {
+      max-width: 1700px !important;
+      padding: 0 40px !important;
+      min-height: 65px !important;
+    }
+
+    .student-navbar .desktopLinks {
+      gap: 6px !important;
+    }
+
+    .student-navbar .linkStyle {
+      padding: 13px 20px !important;
+      font-size: 17px !important;
+    }
+
+    .student-navbar .actions {
+      margin-left: 35px !important;
+      gap: 15px !important;
+    }
+
+    .student-navbar .themeBtn {
+      width: 48px !important;
+      height: 48px !important;
+      font-size: 18px !important;
+    }
+
+    .student-navbar .userAvatar {
+      width: 38px !important;
+      height: 38px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .userText {
+      font-size: 16px !important;
+    }
+
+    .student-navbar .dropdownMenu {
+      width: 340px !important;
+    }
+
+    .student-navbar .dropdownAvatar {
+      width: 60px !important;
+      height: 60px !important;
+      font-size: 22px !important;
+    }
+
+    .student-navbar .dropdownName {
+      font-size: 18px !important;
+    }
+
+    .student-navbar .dropdownEmail {
+      font-size: 15px !important;
+    }
+
+    .student-navbar .dropdownItem {
+      padding: 15px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .mobileOverlay {
+      top: 125px !important;
+    }
+
+    .student-navbar .mobileMenu {
+      width: 350px !important;
+    }
+
+    .student-navbar .mobileMenuHeader {
+      padding: 25px !important;
+    }
+
+    .student-navbar .mobileUserInfo {
+      gap: 15px !important;
+    }
+
+    .student-navbar .mobileAvatar {
+      width: 55px !important;
+      height: 55px !important;
+      font-size: 20px !important;
+    }
+
+    .student-navbar .mobileUserName {
+      font-size: 17px !important;
+    }
+
+    .student-navbar .mobileUserEmail {
+      font-size: 14px !important;
+    }
+
+    .student-navbar .mobileThemeBtn {
+      padding: 10px 14px !important;
+      font-size: 16px !important;
+    }
+
+    .student-navbar .mobileNavItems {
+      padding: 25px !important;
+    }
+
+    .student-navbar .mobileLinkStyle {
+      padding: 16px 22px !important;
+      font-size: 17px !important;
+    }
+
+    .student-navbar .mobileMenuFooter {
+      padding: 25px !important;
+    }
+
+    .student-navbar .mobileLogoutBtn {
+      padding: 16px !important;
+      font-size: 16px !important;
     }
   }
 `;
