@@ -7,8 +7,8 @@ const { protect } = require('../middleware/auth');
 const adminOnly = async (req, res, next) => {
     try {
         const user = await User.findByPk(req.user);
-        if (user.role !== 'Admin') {
-            return res.status(403).json({ message: "Access denied. Admins only." });
+        if (user.role !== 'admin') {
+            return res.status(403).json({ message: "Access denied. admins only." });
         }
         next();
     } catch (err) {
