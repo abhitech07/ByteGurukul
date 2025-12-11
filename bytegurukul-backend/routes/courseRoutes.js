@@ -2,24 +2,48 @@ const express = require('express');
 const router = express.Router();
 const { Course, User, Enrollment, Certificate } = require('../models');
 const { protect } = require('../middleware/auth');
-const upload = require('../middleware/upload'); // Pichle step mein banaya tha
+const upload = require('../middleware/upload');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const { Op } = require('sequelize');
 
 // @route GET /api/courses
-// Get all courses
+// Get all courses with search & filters
 router.get('/', async (req, res) => {
   try {
+    const { search, category, priceMin, priceMax, sortBy, page = 1, limit = 10 } = req.query;
     const where = {};
-    if (req.query.category) where.category = req.query.category;
+    
+    if (search) {
+      where[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+    if (category) where.category = category;
+    if (priceMin || priceMax) {
+      where.price = {};
+      if (priceMin) where.price[Op.gte] = parseFloat(priceMin);
+      if (priceMax) where.price[Op.lte] = parseFloat(priceMax);
+    }
+
+    let order = [['createdAt', 'DESC']];
+    if (sortBy === 'price_asc') order = [['price', 'ASC']];
+    if (sortBy === 'price_desc') order = [['price', 'DESC']];
+    if (sortBy === 'rating') order = [['averageRating', 'DESC']];
 
     const courses = await Course.findAll({
         where,
-        include: [{ model: User, as: 'instructor', attributes: ['username', 'name'] }] 
+        include: [{ model: User, as: 'instructor', attributes: ['username', 'name'] }],
+        order,
+        limit: parseInt(limit),
+        offset: (parseInt(page) - 1) * parseInt(limit)
     });
 
-    res.json({ success: true, data: courses });
+    const total = await Course.count({ where });
+
+    res.json({ success: true, data: courses, pagination: { total, page, limit } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

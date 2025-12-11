@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Course, Enrollment, User } = require('../models'); 
 const { protect } = require('../middleware/auth');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
+const { sendEmail, enrollmentEmail } = require('../utils/sendEmail');
 
 // Razorpay Check
 let razorpay = null;
@@ -15,7 +16,7 @@ try {
         });
     }
 } catch (err) {
-    console.log("Razorpay module not found or keys missing. Running in Mock Mode.");
+    console.error("Razorpay module not found or keys missing. Running in Mock Mode.", err.message);
 }
 
 // @route   GET /api/student/my-learnings
@@ -29,6 +30,7 @@ router.get('/my-learnings', protect, async (req, res) => {
 
         res.json({ success: true, data: courses });
     } catch (error) {
+        console.error('Error fetching learnings:', error.message);
         res.status(500).json({ message: "Server Error" });
     }
 });
@@ -80,37 +82,65 @@ router.post('/order/create', protect, async (req, res) => {
 });
 
 // @route   POST /api/student/order/verify
+// Helper function to verify payment signature
+const verifyPaymentSignature = (razorpay_order_id, razorpay_payment_id, razorpay_signature) => {
+  if (razorpay_order_id && razorpay_order_id.startsWith('order_mock_')) {
+    return true;
+  }
+  
+  if (razorpay && process.env.RAZORPAY_KEY_SECRET) {
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+    return expectedSignature === razorpay_signature;
+  }
+  
+  return false;
+};
+
+// Helper function to handle enrollment and email
+const enrollAndNotify = async (userId, courseId) => {
+  const [enrollment, created] = await Enrollment.findOrCreate({
+    where: { userId, courseId },
+    defaults: { enrollmentDate: new Date() }
+  });
+
+  if (created) {
+    try {
+      const user = await User.findByPk(userId);
+      const course = await Course.findByPk(courseId);
+      
+      if (user && course) {
+        const emailData = enrollmentEmail(user.name || user.email, course.title, courseId);
+        await sendEmail({
+          email: user.email,
+          ...emailData
+        });
+      }
+    } catch (emailError) {
+      console.error("Email sending failed (non-critical):", emailError.message);
+    }
+  }
+
+  return enrollment;
+};
+
+// @route   POST /api/student/order/verify
+// @desc    Verify Razorpay payment and enroll student
 router.post('/order/verify', protect, async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId } = req.body;
 
-        let isAuthentic = false;
-
-        // FIXED LOGIC: Server decides if this is a mock order based on ID format
-        // We do NOT trust req.body.isMock directly for verification logic if possible, 
-        // but checking the ID format "order_mock_" is a safe server-side check.
-        if (razorpay_order_id && razorpay_order_id.startsWith('order_mock_')) {
-            // Allow if server is actually in mock mode (optional check: if !razorpay)
-            isAuthentic = true;
-        } else if (razorpay && process.env.RAZORPAY_KEY_SECRET) {
-            // Real Verification
-            const body = razorpay_order_id + "|" + razorpay_payment_id;
-            const expectedSignature = crypto
-                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-                .update(body.toString())
-                .digest('hex');
-            isAuthentic = expectedSignature === razorpay_signature;
-        } else {
-             // Fallback: If we received a real ID but have no keys to verify
-             return res.status(500).json({ message: "Server configuration error: Cannot verify payment" });
+        if (!razorpay && !razorpay_order_id.startsWith('order_mock_')) {
+            return res.status(500).json({ message: "Server configuration error: Cannot verify payment" });
         }
 
-        if (isAuthentic) {
-            await Enrollment.findOrCreate({
-                where: { userId: req.user, courseId: courseId },
-                defaults: { enrollmentDate: new Date() }
-            });
+        const isAuthentic = verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
 
+        if (isAuthentic) {
+            await enrollAndNotify(req.user, courseId);
             return res.json({ success: true, message: "Course Enrolled Successfully!" });
         } else {
             return res.status(400).json({ success: false, message: "Payment Verification Failed" });

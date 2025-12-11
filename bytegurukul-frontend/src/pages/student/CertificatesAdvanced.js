@@ -1,40 +1,63 @@
 // src/pages/student/CertificatesAdvanced.js
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { QRCodeSVG } from "qrcode.react";
-// ✅ Correct import path (2 levels up)
 import CertificatePrintable from "../../components/certificates/CertificatePrintable";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../contexts/ToastContext";
+import api from "../../services/api";
 
 /**
- * Sample certificates – replace with backend data later
+ * Certificates component - fetches from backend
  */
-const sampleCertificates = [
-  {
-    id: "CERT-2025-0001",
-    name: "Abhijeet Kumar Pandey",
-    course: "Advanced JavaScript & Web Security",
-    instructor: "Dr. Rajesh Sharma",
-    dateIssued: "2025-11-10",
-    grade: "A+",
-    organization: "ByteGurukul",
-    verifyUrl: "https://bytegurukul.in/cert/verify/CERT-2025-0001",
-  },
-  {
-    id: "CERT-2025-0002",
-    name: "Priya Sharma",
-    course: "Data Structures & Algorithms",
-    instructor: "Prof. Aditi Singh",
-    dateIssued: "2025-10-06",
-    grade: "A",
-    organization: "ByteGurukul",
-    verifyUrl: "https://bytegurukul.in/cert/verify/CERT-2025-0002",
-  },
-];
-
 function CertificatesAdvanced() {
   const tempRef = useRef();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch certificates from backend
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/certificates/my-certificates');
+        if (response.data.success) {
+          setCertificates(response.data.data);
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load certificates');
+        showToast(error, 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchCertificates();
+    }
+  }, [user]);
+
+  // Generate certificate if not already issued
+  const handleGenerateCertificate = async (courseId) => {
+    try {
+      const response = await api.post('/certificates/generate', { courseId });
+      if (response.data.success) {
+        showToast('Certificate generated successfully!', 'success');
+        // Refetch certificates
+        const certsResponse = await api.get('/certificates/my-certificates');
+        if (certsResponse.data.success) {
+          setCertificates(certsResponse.data.data);
+        }
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to generate certificate', 'error');
+    }
+  };
 
   const exportAsPDF = async (cert) => {
     // Create temporary hidden mount node
@@ -90,41 +113,74 @@ function CertificatesAdvanced() {
       <div style={styles.header}>
         <div>
           <h1 style={styles.title}>Certificates</h1>
-          <p style={styles.subtitle}>Advanced certificates with QR & PDF export</p>
+          <p style={styles.subtitle}>Your earned certificates with verification and PDF export</p>
         </div>
         <Link to="/dashboard" style={styles.backLink}>
           ← Back to Dashboard
         </Link>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div style={styles.centeredMessage}>
+          <p>Loading certificates...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div style={styles.centeredMessage}>
+          <p style={{ color: '#e74c3c' }}>{error}</p>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && certificates.length === 0 && (
+        <div style={styles.centeredMessage}>
+          <p>No certificates yet. Complete courses to earn certificates!</p>
+        </div>
+      )}
+
       {/* Grid */}
-      <div style={styles.grid}>
-        {sampleCertificates.map((cert) => (
-          <div key={cert.id} style={styles.card}>
-            <div style={styles.topRow}>
-              <div>
-                <div style={styles.organization}>{cert.organization}</div>
-                <div style={styles.name}>{cert.name}</div>
-                <div style={styles.course}>{cert.course}</div>
+      {!loading && certificates.length > 0 && (
+        <div style={styles.grid}>
+          {certificates.map((cert) => (
+            <div key={cert.id} style={styles.card}>
+              <div style={styles.topRow}>
+                <div>
+                  <div style={styles.organization}>ByteGurukul</div>
+                  <div style={styles.name}>{cert.User?.name || 'Student'}</div>
+                  <div style={styles.course}>{cert.Course?.title || 'Course'}</div>
+                </div>
+
+                <div style={{ textAlign: "right" }}>
+                  <QRCodeSVG value={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`} size={90} />
+                  <div style={styles.scanLabel}>Scan to verify</div>
+                </div>
               </div>
 
-              <div style={{ textAlign: "right" }}>
-                <QRCodeSVG value={cert.verifyUrl} size={90} />
-                <div style={styles.scanLabel}>Scan to verify</div>
+              <div style={styles.meta}>
+                <span>Certificate ID: {cert.certificateNumber}</span>
+                <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
               </div>
-            </div>
 
-            {/* Buttons */}
-            <div style={styles.buttonRow}>
-              <button style={styles.primaryBtn} onClick={() => exportAsPDF(cert)}>
-                ⬇ Download PDF
-              </button>
+              {/* Buttons */}
+              <div style={styles.buttonRow}>
+                <button 
+                  style={styles.primaryBtn} 
+                  onClick={() => {
+                    // Download from backend
+                    window.location.href = `${process.env.REACT_APP_API_URL}/certificates/${cert.id}/download`;
+                  }}
+                >
+                  ⬇ Download PDF
+                </button>
 
-              <a
-                href={cert.verifyUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={styles.ghostBtn}
+                <a
+                  href={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.ghostBtn}
               >
                 🔗 Open Verification
               </a>

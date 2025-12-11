@@ -2,25 +2,116 @@ const express = require('express');
 const router = express.Router();
 const { Application, Task, Submission, User } = require('../models');
 const { protect } = require('../middleware/auth');
+const { adminAuth } = require('../middleware/adminAuth');
 
 // --- APPLICATION ROUTES (Existing) ---
 
-router.post('/apply', async (req, res) => {
+// @route   POST /api/internship/apply
+// @desc    Submit internship application
+router.post('/apply', protect, async (req, res) => {
   try {
     const { name, email, phone, university, resumeText, roleId } = req.body;
+    
+    // Validation
     if (!name || !email || !phone || !roleId) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
-    const newApp = await Application.create({ name, email, phone, university, resumeText, roleId });
+
+    // Check if already applied
+    const existing = await Application.findOne({
+      where: { email, roleId }
+    });
+
+    if (existing && existing.status !== 'rejected') {
+      return res.status(400).json({ success: false, message: "You have already applied for this role" });
+    }
+
+    const newApp = await Application.create({
+      userId: req.user,
+      name,
+      email,
+      phone,
+      university,
+      resumeText,
+      roleId,
+      status: 'pending',
+      appliedAt: new Date()
+    });
+
     res.status(201).json({ success: true, message: "Applied successfully!", data: newApp });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
+// @route   GET /api/internship/all
+// @desc    Get all applications (public)
 router.get('/all', async (req, res) => {
-    const apps = await Application.findAll({ order: [['createdAt', 'DESC']] });
-    res.json({ success: true, data: apps });
+    try {
+        const apps = await Application.findAll({
+            order: [['createdAt', 'DESC']],
+            include: [{ model: User, attributes: ['id', 'name', 'email'] }]
+        });
+        res.json({ success: true, data: apps });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   GET /api/internship/my-applications
+// @desc    Get logged-in student's applications
+router.get('/my-applications', protect, async (req, res) => {
+    try {
+        const apps = await Application.findAll({
+            where: { userId: req.user },
+            order: [['createdAt', 'DESC']]
+        });
+        res.json({ success: true, data: apps });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   PUT /api/internship/applications/:appId/approve
+// @desc    Approve application (Admin only)
+router.put('/applications/:appId/approve', protect, adminAuth, async (req, res) => {
+    try {
+        const application = await Application.findByPk(req.params.appId);
+        
+        if (!application) {
+            return res.status(404).json({ success: false, message: "Application not found" });
+        }
+
+        application.status = 'approved';
+        application.approvedAt = new Date();
+        await application.save();
+
+        res.json({ success: true, message: "Application approved", data: application });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   PUT /api/internship/applications/:appId/reject
+// @desc    Reject application (Admin only)
+router.put('/applications/:appId/reject', protect, adminAuth, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const application = await Application.findByPk(req.params.appId);
+        
+        if (!application) {
+            return res.status(404).json({ success: false, message: "Application not found" });
+        }
+
+        application.status = 'rejected';
+        application.rejectionReason = reason || null;
+        application.rejectedAt = new Date();
+        await application.save();
+
+        res.json({ success: true, message: "Application rejected", data: application });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // --- NEW TASK & SUBMISSION ROUTES ---

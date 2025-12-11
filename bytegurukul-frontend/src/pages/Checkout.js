@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { studentService } from '../services/studentService'; // IMPORT ADDED
+import { studentService } from '../services/studentService';
 import { FaCreditCard, FaWallet, FaUniversity, FaLock, FaCheckCircle, FaUserCircle, FaShoppingBag } from 'react-icons/fa';
 
 function Checkout() {
-  // Note: Added clearCart from context to empty cart after purchase
   const { cart, getCartTotal, clearCart } = useCart(); 
   const { user } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -79,6 +80,9 @@ function Checkout() {
       // Order Complete
       setIsProcessing(false);
       
+      // Show success toast
+      showToast('Order placed successfully! Courses added to your library.', 'success');
+      
       // Clear Cart locally
       if(clearCart) clearCart(); 
 
@@ -93,7 +97,7 @@ function Checkout() {
     } catch (error) {
       console.error("Payment Failed:", error);
       setIsProcessing(false);
-      alert(error.message || "Something went wrong during checkout.");
+      showToast(error.message || "Payment failed. Please try again.", 'error');
     }
   };
 

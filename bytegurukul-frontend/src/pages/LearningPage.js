@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useCourse } from '../contexts/CourseContext';
-import { useAuth } from '../contexts/AuthContext';
 
 function LearningPage() {
   const { courseId } = useParams();
-  const { enrolledCourses, getEnrolledCourse, updateCourseProgress, getCourseProgress } = useCourse();
-  const { user } = useAuth();
+  const { updateCourseProgress } = useCourse();
   const navigate = useNavigate();
 
   const [currentModule, setCurrentModule] = useState(0);
   const [currentLesson, setCurrentLesson] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Helper function to get resource icon based on type
+  const getResourceIcon = (type) => {
+    switch (type) {
+      case 'pdf':
+        return '📄';
+      case 'code':
+        return '💻';
+      default:
+        return '📦';
+    }
+  };
 
   // Mock course content
   const courseContent = {
@@ -170,10 +180,6 @@ function LearningPage() {
     setCurrentLesson(0);
   };
 
-  const handleLessonSelect = (lessonIndex) => {
-    setCurrentLesson(lessonIndex);
-  };
-
   const calculateProgress = () => {
     const totalLessons = course.modules.reduce((sum, module) => sum + module.lessons.length, 0);
     const completedLessons = course.modules.slice(0, currentModule).reduce((sum, module) => sum + module.lessons.length, 0) + currentLesson;
@@ -210,23 +216,24 @@ function LearningPage() {
             <h3 style={styles.sidebarTitle}>Course Content</h3>
             {course.modules.map((module, moduleIndex) => (
               <div key={module.id} style={styles.moduleItem}>
-                <div 
+                <button 
                   style={{
                     ...styles.moduleHeader,
                     ...(moduleIndex === currentModule ? styles.activeModule : {})
                   }}
                   onClick={() => handleModuleSelect(moduleIndex)}
+                  aria-pressed={moduleIndex === currentModule}
                 >
                   <span style={styles.moduleNumber}>Module {moduleIndex + 1}</span>
                   <h4 style={styles.moduleTitle}>{module.title}</h4>
                   <span style={styles.lessonCount}>
                     {module.lessons.length} lessons
                   </span>
-                </div>
+                </button>
                 
                 <div style={styles.lessonsList}>
                   {module.lessons.map((lesson, lessonIndex) => (
-                    <div
+                    <button
                       key={lesson.id}
                       style={{
                         ...styles.lessonItem,
@@ -236,18 +243,19 @@ function LearningPage() {
                         setCurrentModule(moduleIndex);
                         setCurrentLesson(lessonIndex);
                       }}
+                      aria-pressed={moduleIndex === currentModule && lessonIndex === currentLesson}
                     >
                       <span style={styles.lessonIcon}>
                         {lesson.type === 'video' ? '🎥' : '📝'}
                       </span>
                       <div style={styles.lessonInfo}>
-                        <span style={styles.lessonTitle}>{lesson.title}</span>
+                        <span style={styles.sidebarLessonTitle}>{lesson.title}</span>
                         <span style={styles.lessonDuration}>{lesson.duration}</span>
                       </div>
                       {moduleIndex < currentModule || (moduleIndex === currentModule && lessonIndex <= currentLesson) ? (
                         <span style={styles.completedIcon}>✓</span>
                       ) : null}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -291,7 +299,7 @@ function LearningPage() {
                   <span style={styles.lessonType}>
                     {currentLessonData.type === 'video' ? '🎥 Video Lesson' : '📝 Quiz'}
                   </span>
-                  <span style={styles.lessonDuration}>
+                  <span style={styles.lessonDurationBadge}>
                     {currentLessonData.duration}
                   </span>
                 </div>
@@ -310,15 +318,15 @@ function LearningPage() {
                 ) : (
                   <div style={styles.quizContainer}>
                     <h3 style={styles.quizTitle}>Quiz Time!</h3>
-                    {currentLessonData.questions?.map((question, index) => (
-                      <div key={index} style={styles.question}>
+                    {currentLessonData.questions?.map((question) => (
+                      <div key={`quiz-${question.question}`} style={styles.question}>
                         <h4 style={styles.questionText}>
-                          {index + 1}. {question.question}
+                          {currentLessonData.questions.indexOf(question) + 1}. {question.question}
                         </h4>
                         <div style={styles.options}>
                           {question.options.map((option, optIndex) => (
-                            <label key={optIndex} style={styles.option}>
-                              <input type="radio" name={`question-${index}`} />
+                            <label key={`${question.question}-${optIndex}`} style={styles.option}>
+                              <input type="radio" name={`question-${currentLessonData.questions.indexOf(question)}`} />
                               {option}
                             </label>
                           ))}
@@ -336,11 +344,10 @@ function LearningPage() {
                   <div style={styles.resources}>
                     <h4 style={styles.resourcesTitle}>Resources</h4>
                     <div style={styles.resourcesList}>
-                      {currentLessonData.resources.map((resource, index) => (
-                        <a key={index} href={resource.url} style={styles.resource}>
+                      {currentLessonData.resources.map((resource) => (
+                        <a key={`${resource.name}-${resource.url}`} href={resource.url} style={styles.resource}>
                           <span style={styles.resourceIcon}>
-                            {resource.type === 'pdf' ? '📄' : 
-                             resource.type === 'code' ? '💻' : '📦'}
+                            {getResourceIcon(resource.type)}
                           </span>
                           {resource.name}
                         </a>
@@ -362,6 +369,22 @@ function LearningPage() {
                   }}
                 >
                   ← Previous
+                </button>
+
+                <button 
+                  onClick={() => {
+                    const totalLessons = course.modules.reduce((sum, module) => sum + module.lessons.length, 0);
+                    const completedLessons = course.modules.slice(0, currentModule).reduce((sum, module) => sum + module.lessons.length, 0) + currentLesson + 1;
+                    updateCourseProgress(courseId, Math.round((completedLessons / totalLessons) * 100), currentModule, currentLesson);
+                    alert('Lecture marked as complete! ✓');
+                  }}
+                  style={{
+                    ...styles.navButton,
+                    backgroundColor: 'var(--success)',
+                    color: 'white'
+                  }}
+                >
+                  ✓ Mark Complete
                 </button>
                 
                 <button 
@@ -526,7 +549,7 @@ const styles = {
   lessonInfo: {
     flex: 1
   },
-  lessonTitle: {
+  sidebarLessonTitle: {
     fontSize: '14px',
     margin: '0 0 2px 0',
     fontWeight: '500'
@@ -629,7 +652,7 @@ const styles = {
     fontSize: '14px',
     color: 'var(--text-secondary)'
   },
-  lessonDuration: {
+  lessonDurationBadge: {
     fontSize: '14px',
     color: 'var(--text-secondary)',
     backgroundColor: 'var(--hover-bg)',

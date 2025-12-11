@@ -1,69 +1,280 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/upload'); // Import Multer
-const { Pyq } = require('../models'); // Import Model
-const { protect } = require('../middleware/auth'); // Sirf logged in users ke liye (optional)
+const { uploadPDF } = require('../middleware/upload');
+const { Pyq } = require('../models');
+const { protect } = require('../middleware/auth');
+const { Op } = require('sequelize');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // @route   POST /api/pyq
-// @desc    Upload a new PYQ
+// @desc    Upload a new PYQ with strict validation
 // @access  Admin/Instructor
-router.post('/', upload.single('file'), async (req, res) => {
+router.post('/', uploadPDF.single('file'), async (req, res) => {
   try {
-    console.log("File Uploaded:", req.file);
-    console.log("Body Data:", req.body);
-
+    // Validate file was uploaded
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'No file uploaded. Please select a PDF file.' 
+      });
     }
 
+    // Validate required fields
     const { subject, year, branch, semester } = req.body;
+    if (!subject || !year || !branch || !semester) {
+      // Clean up uploaded file if validation fails
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ 
+        success: false,
+        message: 'All fields (subject, year, branch, semester) are required' 
+      });
+    }
 
-    // Create Database Entry
+    // Validate field formats
+    const yearNum = parseInt(year);
+    const semesterNum = parseInt(semester);
+    
+    if (isNaN(yearNum) || yearNum < 2000 || yearNum > new Date().getFullYear()) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid year format' 
+      });
+    }
+
+    if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Semester must be between 1 and 8' 
+      });
+    }
+
+    // Validate file exists and size
+    const fileStats = fs.statSync(req.file.path);
+    if (fileStats.size === 0) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ 
+        success: false,
+        message: 'Uploaded file is empty' 
+      });
+    }
+
+    // Create database entry
     const newPyq = await Pyq.create({
-      subject,
-      year,
-      branch,
-      semester,
+      subject: subject.trim(),
+      year: yearNum,
+      branch: branch.trim(),
+      semester: semesterNum,
       filename: req.file.filename,
-      filePath: `/uploads/${req.file.filename}` // Frontend access path
+      filePath: `/uploads/${req.file.filename}`,
+      fileSize: fileStats.size,
+      mimeType: req.file.mimetype,
+      uploadedBy: req.user || null
     });
 
+    console.log("PYQ uploaded successfully:", newPyq.filename);
+
     res.status(201).json({ 
-        success: true, 
-        message: 'PYQ uploaded successfully!', 
-        data: newPyq 
+      success: true, 
+      message: 'PYQ uploaded successfully!', 
+      data: {
+        id: newPyq.id,
+        subject: newPyq.subject,
+        year: newPyq.year,
+        branch: newPyq.branch,
+        semester: newPyq.semester,
+        filePath: newPyq.filePath,
+        fileSize: newPyq.fileSize,
+        uploadedAt: newPyq.createdAt
+      }
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    // Clean up on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkErr) {
+        console.error('Failed to delete file on error:', unlinkErr.message);
+      }
+    }
+
+    console.error('Upload error:', error.message);
+    
+    // Distinguish between validation and server errors
+    if (error.name === 'MulterError') {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ 
+          success: false,
+          message: 'File size exceeds maximum allowed (20MB for PDFs)' 
+        });
+      }
+      if (error.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Only one file can be uploaded at a time' 
+        });
+      }
+    }
+
+    if (error.message && error.message.includes('File type') || error.message.includes('not allowed')) {
+      return res.status(400).json({ 
+        success: false,
+        message: error.message 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error', 
+      error: error.message 
+    });
   }
 });
 
 // @route   GET /api/pyq
-// @desc    Get all PYQs
+// @desc    Get all PYQs with search & filters
 router.get('/', async (req, res) => {
     try {
-        const pyqs = await Pyq.findAll({ order: [['createdAt', 'DESC']] });
-        res.json({ success: true, data: pyqs });
+        const { search, subject, year, branch, semester, limit = 50, page = 1 } = req.query;
+        const where = {};
+
+        // Validate year if provided
+        if (year) {
+          const yearNum = parseInt(year);
+          if (!isNaN(yearNum)) {
+            where.year = yearNum;
+          }
+        }
+
+        // Validate semester if provided
+        if (semester) {
+          const semesterNum = parseInt(semester);
+          if (!isNaN(semesterNum) && semesterNum >= 1 && semesterNum <= 8) {
+            where.semester = semesterNum;
+          }
+        }
+
+        if (search) {
+            where[Op.or] = [
+                { subject: { [Op.iLike]: `%${search}%` } },
+                { branch: { [Op.iLike]: `%${search}%` } }
+            ];
+        }
+        if (subject) where.subject = subject.trim();
+        if (branch) where.branch = branch.trim();
+
+        const limitNum = Math.min(parseInt(limit) || 50, 100);
+        const pageNum = Math.max(parseInt(page) || 1, 1);
+
+        const { rows: pyqs, count: total } = await Pyq.findAndCountAll({
+            where,
+            attributes: ['id', 'subject', 'year', 'branch', 'semester', 'filePath', 'fileSize', 'createdAt'],
+            order: [['createdAt', 'DESC']],
+            limit: limitNum,
+            offset: (pageNum - 1) * limitNum
+        });
+
+        res.json({ 
+          success: true, 
+          data: pyqs,
+          pagination: {
+            total,
+            page: pageNum,
+            limit: limitNum,
+            pages: Math.ceil(total / limitNum)
+          }
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('PYQ fetch error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// @route   GET /api/pyq/:id
+// @desc    Download a PYQ file
+router.get('/:id', async (req, res) => {
+    try {
+        const pyq = await Pyq.findByPk(req.params.id);
+        if (!pyq) {
+          return res.status(404).json({ success: false, message: "PYQ not found" });
+        }
+
+        // Construct safe file path
+        const filePath = path.join(__dirname, '../uploads', path.basename(pyq.filename));
+        
+        // Security: Prevent path traversal
+        if (!filePath.startsWith(path.join(__dirname, '../uploads'))) {
+          return res.status(400).json({ success: false, message: "Invalid file path" });
+        }
+
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+          return res.status(404).json({ success: false, message: "File not found on server" });
+        }
+
+        // Set proper headers for download
+        res.setHeader('Content-Disposition', `attachment; filename="${pyq.filename}"`);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Length', fs.statSync(filePath).size);
+
+        // Stream file
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+        fileStream.on('error', (err) => {
+          console.error('File stream error:', err.message);
+          res.status(500).json({ success: false, message: 'Error downloading file' });
+        });
+    } catch (error) {
+        console.error('Download error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
 // @route   DELETE /api/pyq/:id
 // @desc    Delete a PYQ
+// @access  Admin/Instructor
 router.delete('/:id', protect, async (req, res) => {
     try {
         const pyq = await Pyq.findByPk(req.params.id);
-        if (!pyq) return res.status(404).json({ message: "Paper not found" });
+        if (!pyq) {
+          return res.status(404).json({ success: false, message: "Paper not found" });
+        }
 
-        // Optional: Delete file from server folder too (fs.unlink)
+        // Construct safe file path
+        const filePath = path.join(__dirname, '../uploads', path.basename(pyq.filename));
         
+        // Security: Prevent path traversal attacks
+        if (!filePath.startsWith(path.join(__dirname, '../uploads'))) {
+          return res.status(400).json({ success: false, message: "Invalid file path" });
+        }
+
+        // Delete file from disk if it exists
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log('File deleted:', pyq.filename);
+          } catch (unlinkErr) {
+            console.error('Failed to delete file:', unlinkErr.message);
+            return res.status(500).json({ 
+              success: false,
+              message: 'Failed to delete file from server' 
+            });
+          }
+        }
+
+        // Delete database record
         await pyq.destroy();
-        res.json({ success: true, message: "Paper deleted" });
+        
+        res.json({ 
+          success: true, 
+          message: "Paper deleted successfully" 
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Delete error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 

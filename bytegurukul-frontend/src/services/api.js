@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // FIXED: Use environment variable with fallback to localhost
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -36,7 +36,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      globalThis.location.href = '/login';
     }
     
     return Promise.reject(error.response?.data || error.message);
