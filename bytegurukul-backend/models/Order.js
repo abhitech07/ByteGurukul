@@ -1,4 +1,4 @@
-module.exports = (sequelize, DataTypes) => {
+module.exports = function defineOrder(sequelize, DataTypes) {
   const Order = sequelize.define('Order', {
     id: {
       type: DataTypes.UUID,

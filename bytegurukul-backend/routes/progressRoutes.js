@@ -207,13 +207,13 @@ router.post('/watch-lecture/:courseId/:lectureId', protect, async (req, res) => 
       progress = await Progress.create({
         userId,
         courseId,
-        watchedLectureIds: [parseInt(lectureId)]
+        watchedLectureIds: [Number.parseInt(lectureId)]
       });
     } else {
       // Add to watched lectures if not already there
       const watched = Array.isArray(progress.watchedLectureIds) ? progress.watchedLectureIds : [];
-      if (!watched.includes(parseInt(lectureId))) {
-        watched.push(parseInt(lectureId));
+      if (!watched.includes(Number.parseInt(lectureId))) {
+        watched.push(Number.parseInt(lectureId));
       }
 
       // Get total lectures in course
@@ -393,9 +393,9 @@ router.get('/analytics/:courseId', protect, async (req, res) => {
         totalStudents,
         completedStudents,
         completionRate: totalStudents > 0 ? ((completedStudents / totalStudents) * 100).toFixed(2) : 0,
-        avgCompletion: parseFloat(avgCompletion),
+        avgCompletion: Number.parseFloat(avgCompletion),
         avgTimeSpent,
-        avgPerformance: parseFloat(avgPerformance),
+        avgPerformance: Number.parseFloat(avgPerformance),
         studentProgress: progressData
       }
     });

@@ -14,6 +14,7 @@ const adminOnly = async (req, res, next) => {
         }
         next();
     } catch (err) {
+        console.error('Admin check error:', err);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -36,8 +37,8 @@ router.get('/users', protect, adminOnly, async (req, res) => {
         const users = await User.findAll({
             where,
             attributes: { exclude: ['password'] },
-            limit: parseInt(limit),
-            offset: (parseInt(page) - 1) * parseInt(limit),
+            limit: Number.parseInt(limit),
+            offset: (Number.parseInt(page) - 1) * Number.parseInt(limit),
             order: [['createdAt', 'DESC']]
         });
 
@@ -120,12 +121,12 @@ router.get('/analytics', protect, adminOnly, async (req, res) => {
                 pendingApplications,
                 studentCount,
                 instructorCount,
-                totalRevenue: parseFloat(totalRevenue),
+                totalRevenue: Number.parseFloat(totalRevenue),
                 instructorRevenue: instructorRevenue.map(item => ({
                     instructorId: item.Course?.instructorId,
                     instructorName: item.Course?.instructor?.name,
                     instructorEmail: item.Course?.instructor?.email,
-                    revenue: parseFloat(item.dataValues?.revenue || 0)
+                    revenue: Number.parseFloat(item.dataValues?.revenue || 0)
                 }))
             }
         });
@@ -156,7 +157,6 @@ router.post('/settings', protect, adminOnly, async (req, res) => {
 router.get('/analytics/export', protect, adminOnly, async (req, res) => {
     try {
         const users = await User.findAll({ attributes: { exclude: ['password'] } });
-        const enrollments = await Enrollment.findAll({ include: [User, Course] });
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Analytics');

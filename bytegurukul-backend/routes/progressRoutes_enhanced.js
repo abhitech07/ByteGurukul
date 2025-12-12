@@ -61,34 +61,34 @@ router.put('/course/:courseId', protect, async (req, res) => {
       where: { userId, courseId }
     });
 
-    if (!progress) {
+    if (progress) {
+      // Determine if course is completed (all lectures watched or 100% completion)
+      const isCompleted = completionPercentage === 100 || 
+                         (totalLectures && lecturesCompleted >= totalLectures);
+
+      // Update progress record
+      await progress.update({
+        completionPercentage: completionPercentage ?? progress.completionPercentage,
+        totalTimeSpent: totalTimeSpent ?? progress.totalTimeSpent,
+        lecturesCompleted: lecturesCompleted ?? progress.lecturesCompleted,
+        totalLectures: totalLectures ?? progress.totalLectures,
+        currentLectureId: currentLectureId ?? progress.currentLectureId,
+        watchedLectureIds: watchedLectureIds ?? progress.watchedLectureIds,
+        performanceScore: performanceScore ?? progress.performanceScore,
+        notes: notes ?? progress.notes,
+        isCompleted,
+        completedAt: isCompleted ? new Date() : progress.completedAt,
+        lastAccessedAt: new Date()
+      });
+
+      res.json({
+        success: true,
+        message: 'Progress updated successfully',
+        data: progress
+      });
+    } else {
       return res.status(404).json({ message: 'Progress record not found' });
     }
-
-    // Determine if course is completed (all lectures watched or 100% completion)
-    const isCompleted = completionPercentage === 100 || 
-                       (totalLectures && lecturesCompleted >= totalLectures);
-
-    // Update progress record
-    await progress.update({
-      completionPercentage: completionPercentage ?? progress.completionPercentage,
-      totalTimeSpent: totalTimeSpent ?? progress.totalTimeSpent,
-      lecturesCompleted: lecturesCompleted ?? progress.lecturesCompleted,
-      totalLectures: totalLectures ?? progress.totalLectures,
-      currentLectureId: currentLectureId ?? progress.currentLectureId,
-      watchedLectureIds: watchedLectureIds ?? progress.watchedLectureIds,
-      performanceScore: performanceScore ?? progress.performanceScore,
-      notes: notes ?? progress.notes,
-      isCompleted,
-      completedAt: isCompleted ? new Date() : progress.completedAt,
-      lastAccessedAt: new Date()
-    });
-
-    res.json({
-      success: true,
-      message: 'Progress updated successfully',
-      data: progress
-    });
   } catch (error) {
     console.error('Progress update error:', error.message);
     res.status(500).json({ message: error.message });
@@ -142,17 +142,11 @@ router.post('/watch-lecture/:courseId/:lectureId', protect, async (req, res) => 
       where: { userId, courseId }
     });
 
-    if (!progress) {
-      progress = await Progress.create({
-        userId,
-        courseId,
-        watchedLectureIds: [parseInt(lectureId)]
-      });
-    } else {
+    if (progress) {
       // Add to watched lectures if not already there
       const watched = Array.isArray(progress.watchedLectureIds) ? progress.watchedLectureIds : [];
-      if (!watched.includes(parseInt(lectureId))) {
-        watched.push(parseInt(lectureId));
+      if (!watched.includes(Number.parseInt(lectureId))) {
+        watched.push(Number.parseInt(lectureId));
       }
 
       // Get total lectures in course
@@ -170,6 +164,12 @@ router.post('/watch-lecture/:courseId/:lectureId', protect, async (req, res) => 
         totalTimeSpent: (progress.totalTimeSpent || 0) + timeWatched,
         lastAccessedAt: new Date(),
         isCompleted: completionPercentage === 100
+      });
+    } else {
+      progress = await Progress.create({
+        userId,
+        courseId,
+        watchedLectureIds: [Number.parseInt(lectureId)]
       });
     }
 
@@ -237,9 +237,9 @@ router.get('/analytics/:courseId', protect, async (req, res) => {
         totalStudents,
         completedStudents,
         completionRate: totalStudents > 0 ? ((completedStudents / totalStudents) * 100).toFixed(2) : 0,
-        avgCompletion: parseFloat(avgCompletion),
+        avgCompletion: Number.parseFloat(avgCompletion),
         avgTimeSpent,
-        avgPerformance: parseFloat(avgPerformance),
+        avgPerformance: Number.parseFloat(avgPerformance),
         studentProgress: progressData
       }
     });

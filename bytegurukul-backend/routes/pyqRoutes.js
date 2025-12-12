@@ -7,65 +7,84 @@ const { Op } = require('sequelize');
 const fs = require('node:fs');
 const path = require('node:path');
 
+// Helper function to safely cleanup uploaded file
+const cleanupFile = (filePath) => {
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error('Failed to delete file on error:', err.message);
+    }
+  }
+};
+
+// Helper function to validate PYQ data
+const validatePyqData = (file, body) => {
+  if (!file) {
+    return { valid: false, message: 'No file uploaded. Please select a PDF file.', status: 400 };
+  }
+
+  const { subject, year, branch, semester } = body;
+  if (!subject || !year || !branch || !semester) {
+    return { valid: false, message: 'All fields (subject, year, branch, semester) are required', status: 400 };
+  }
+
+  const yearNum = Number.parseInt(year);
+  if (Number.isNaN(yearNum) || yearNum < 2000 || yearNum > new Date().getFullYear()) {
+    return { valid: false, message: 'Invalid year format', status: 400 };
+  }
+
+  const semesterNum = Number.parseInt(semester);
+  if (Number.isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
+    return { valid: false, message: 'Semester must be between 1 and 8', status: 400 };
+  }
+
+  const fileStats = fs.statSync(file.path);
+  if (fileStats.size === 0) {
+    return { valid: false, message: 'Uploaded file is empty', status: 400 };
+  }
+
+  return { valid: true, data: { subject: subject.trim(), yearNum, branch: branch.trim(), semesterNum, fileStats } };
+};
+
+// Helper function to handle Multer errors
+const handleMulterError = (error) => {
+  if (error.name === 'MulterError') {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return { message: 'File size exceeds maximum allowed (20MB for PDFs)', status: 413 };
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return { message: 'Only one file can be uploaded at a time', status: 400 };
+    }
+  }
+  if (error.message && (error.message.includes('File type') || error.message.includes('not allowed'))) {
+    return { message: error.message, status: 400 };
+  }
+  return null;
+};
+
 // @route   POST /api/pyq
 // @desc    Upload a new PYQ with strict validation
 // @access  Admin/Instructor
 router.post('/', uploadPDF.single('file'), async (req, res) => {
   try {
-    // Validate file was uploaded
-    if (!req.file) {
-      return res.status(400).json({ 
+    // Validate input data using helper function
+    const validation = validatePyqData(req.file, req.body);
+    if (!validation.valid) {
+      cleanupFile(req.file?.path);
+      return res.status(validation.status).json({ 
         success: false,
-        message: 'No file uploaded. Please select a PDF file.' 
+        message: validation.message 
       });
     }
 
-    // Validate required fields
-    const { subject, year, branch, semester } = req.body;
-    if (!subject || !year || !branch || !semester) {
-      // Clean up uploaded file if validation fails
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ 
-        success: false,
-        message: 'All fields (subject, year, branch, semester) are required' 
-      });
-    }
-
-    // Validate field formats
-    const yearNum = parseInt(year);
-    const semesterNum = parseInt(semester);
-    
-    if (isNaN(yearNum) || yearNum < 2000 || yearNum > new Date().getFullYear()) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid year format' 
-      });
-    }
-
-    if (isNaN(semesterNum) || semesterNum < 1 || semesterNum > 8) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ 
-        success: false,
-        message: 'Semester must be between 1 and 8' 
-      });
-    }
-
-    // Validate file exists and size
-    const fileStats = fs.statSync(req.file.path);
-    if (fileStats.size === 0) {
-      fs.unlinkSync(req.file.path);
-      return res.status(400).json({ 
-        success: false,
-        message: 'Uploaded file is empty' 
-      });
-    }
+    const { subject, yearNum, branch, semesterNum, fileStats } = validation.data;
 
     // Create database entry
     const newPyq = await Pyq.create({
-      subject: subject.trim(),
+      subject,
       year: yearNum,
-      branch: branch.trim(),
+      branch,
       semester: semesterNum,
       filename: req.file.filename,
       filePath: `/uploads/${req.file.filename}`,
@@ -92,37 +111,15 @@ router.post('/', uploadPDF.single('file'), async (req, res) => {
     });
 
   } catch (error) {
-    // Clean up on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkErr) {
-        console.error('Failed to delete file on error:', unlinkErr.message);
-      }
-    }
-
+    cleanupFile(req.file?.path);
     console.error('Upload error:', error.message);
     
-    // Distinguish between validation and server errors
-    if (error.name === 'MulterError') {
-      if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ 
-          success: false,
-          message: 'File size exceeds maximum allowed (20MB for PDFs)' 
-        });
-      }
-      if (error.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Only one file can be uploaded at a time' 
-        });
-      }
-    }
-
-    if (error.message && error.message.includes('File type') || error.message.includes('not allowed')) {
-      return res.status(400).json({ 
+    // Handle Multer errors
+    const multerError = handleMulterError(error);
+    if (multerError) {
+      return res.status(multerError.status).json({ 
         success: false,
-        message: error.message 
+        message: multerError.message 
       });
     }
 
@@ -143,16 +140,16 @@ router.get('/', async (req, res) => {
 
         // Validate year if provided
         if (year) {
-          const yearNum = parseInt(year);
-          if (!isNaN(yearNum)) {
+          const yearNum = Number.parseInt(year);
+          if (!Number.isNaN(yearNum)) {
             where.year = yearNum;
           }
         }
 
         // Validate semester if provided
         if (semester) {
-          const semesterNum = parseInt(semester);
-          if (!isNaN(semesterNum) && semesterNum >= 1 && semesterNum <= 8) {
+          const semesterNum = Number.parseInt(semester);
+          if (!Number.isNaN(semesterNum) && semesterNum >= 1 && semesterNum <= 8) {
             where.semester = semesterNum;
           }
         }
@@ -166,8 +163,8 @@ router.get('/', async (req, res) => {
         if (subject) where.subject = subject.trim();
         if (branch) where.branch = branch.trim();
 
-        const limitNum = Math.min(parseInt(limit) || 50, 100);
-        const pageNum = Math.max(parseInt(page) || 1, 1);
+        const limitNum = Math.min(Number.parseInt(limit) || 50, 100);
+        const pageNum = Math.max(Number.parseInt(page) || 1, 1);
 
         const { rows: pyqs, count: total } = await Pyq.findAndCountAll({
             where,
@@ -256,8 +253,8 @@ router.delete('/:id', protect, async (req, res) => {
           try {
             fs.unlinkSync(filePath);
             console.log('File deleted:', pyq.filename);
-          } catch (unlinkErr) {
-            console.error('Failed to delete file:', unlinkErr.message);
+          } catch (error_) {
+            console.error('Failed to delete file:', error_.message);
             return res.status(500).json({ 
               success: false,
               message: 'Failed to delete file from server' 
