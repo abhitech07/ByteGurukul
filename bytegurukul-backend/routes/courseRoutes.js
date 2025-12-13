@@ -2,12 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { Course, User, Enrollment, Certificate } = require('../models');
 const { protect } = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { upload } = require('../middleware/uploadMiddleware');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const { Op } = require('sequelize');
-
 // @route GET /api/courses
 // Get all courses with search & filters
 router.get('/', async (req, res) => {

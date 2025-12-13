@@ -122,34 +122,34 @@ router.put('/course/:courseId', protect, async (req, res) => {
       where: { userId, courseId }
     });
 
-    if (!progress) {
+    if (progress) {
+      // Determine if course is completed (all lectures watched or 100% completion)
+      const isCompleted = completionPercentage === 100 || 
+                         (totalLectures && lecturesCompleted >= totalLectures);
+
+      // Update progress record
+      await progress.update({
+        completionPercentage: completionPercentage ?? progress.completionPercentage,
+        totalTimeSpent: totalTimeSpent ?? progress.totalTimeSpent,
+        lecturesCompleted: lecturesCompleted ?? progress.lecturesCompleted,
+        totalLectures: totalLectures ?? progress.totalLectures,
+        currentLectureId: currentLectureId ?? progress.currentLectureId,
+        watchedLectureIds: watchedLectureIds ?? progress.watchedLectureIds,
+        performanceScore: performanceScore ?? progress.performanceScore,
+        notes: notes ?? progress.notes,
+        isCompleted,
+        completedAt: isCompleted ? new Date() : progress.completedAt,
+        lastAccessedAt: new Date()
+      });
+
+      res.json({
+        success: true,
+        message: 'Progress updated successfully',
+        data: progress
+      });
+    } else {
       return res.status(404).json({ message: 'Progress record not found' });
     }
-
-    // Determine if course is completed (all lectures watched or 100% completion)
-    const isCompleted = completionPercentage === 100 || 
-                       (totalLectures && lecturesCompleted >= totalLectures);
-
-    // Update progress record
-    await progress.update({
-      completionPercentage: completionPercentage ?? progress.completionPercentage,
-      totalTimeSpent: totalTimeSpent ?? progress.totalTimeSpent,
-      lecturesCompleted: lecturesCompleted ?? progress.lecturesCompleted,
-      totalLectures: totalLectures ?? progress.totalLectures,
-      currentLectureId: currentLectureId ?? progress.currentLectureId,
-      watchedLectureIds: watchedLectureIds ?? progress.watchedLectureIds,
-      performanceScore: performanceScore ?? progress.performanceScore,
-      notes: notes ?? progress.notes,
-      isCompleted,
-      completedAt: isCompleted ? new Date() : progress.completedAt,
-      lastAccessedAt: new Date()
-    });
-
-    res.json({
-      success: true,
-      message: 'Progress updated successfully',
-      data: progress
-    });
   } catch (error) {
     console.error('Progress update error:', error.message);
     res.status(500).json({ message: error.message });
@@ -271,12 +271,14 @@ router.post('/mark-complete', protect, async (req, res) => {
       defaults: { isCompleted: true, progressPercentage: 100, completedAt: new Date() }
     });
 
-    if (lectureProgressRecord && !lectureProgressRecord.isCompleted) {
-      await lectureProgressRecord.update({
-        isCompleted: true,
-        progressPercentage: 100,
-        completedAt: new Date()
-      });
+    if (lectureProgressRecord) {
+      if (lectureProgressRecord.isCompleted === false) {
+        await lectureProgressRecord.update({
+          isCompleted: true,
+          progressPercentage: 100,
+          completedAt: new Date()
+        });
+      }
     }
 
     res.json({ success: true, message: "Lecture marked as complete", data: lectureProgressRecord });

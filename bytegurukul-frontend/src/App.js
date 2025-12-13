@@ -56,6 +56,7 @@ import InstructorCreateCourse from './pages/InstructorCreateCourse';
 import InstructorStudents from './pages/InstructorStudents';
 import InstructorEarnings from './pages/InstructorEarnings';
 import InstructorAnalytics from './pages/InstructorAnalytics';
+import RecruiterDashboard from './pages/RecruiterDashboard';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -202,7 +203,8 @@ function RootContent() {
                 <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['Admin']} element={<AdminAnalytics />} />} />
                 <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['Admin']} element={<AdminReports />} />} />
                 <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['Admin']} element={<AdminSettings />} />} />
-
+                <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRoles={['Recruiter', 'Admin']} element={<RecruiterDashboard />} /> } 
+/>
                 {/* Catch-all route for 404 */}
                 <Route path="*" element={<div>404: Page Not Found</div>} />
             </Routes>

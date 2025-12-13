@@ -1,5 +1,5 @@
 // src/pages/student/CertificatesAdvanced.js
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, Fragment } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { QRCodeSVG } from "qrcode.react";
@@ -120,6 +120,7 @@ function CertificatesAdvanced() {
         </Link>
       </div>
 
+      <div>
       {/* Loading State */}
       {loading && (
         <div style={styles.centeredMessage}>
@@ -160,33 +161,36 @@ function CertificatesAdvanced() {
               </div>
 
               <div style={styles.meta}>
-                <span>Certificate ID: {cert.certificateNumber}</span>
-                <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
+                <Fragment>
+                  <span>Certificate ID: {cert.certificateNumber}</span>
+                  <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
+                </Fragment>
               </div>
 
               {/* Buttons */}
-              <div style={styles.buttonRow}>
-                <button 
-                  style={styles.primaryBtn} 
-                  onClick={() => {
-                    // Download from backend
-                    window.location.href = `${process.env.REACT_APP_API_URL}/certificates/${cert.id}/download`;
-                  }}
-                >
-                  ⬇ Download PDF
-                </button>
+            <div style={styles.buttonRow}>
+              <button
+                style={styles.primaryBtn}
+                onClick={() => {
+                  // Download from backend
+                  window.location.href = `${process.env.REACT_APP_API_URL}/certificates/${cert.id}/download`;
+                }}
+              >
+                ⬇ Download PDF
+              </button>
 
-                <a
-                  href={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={styles.ghostBtn}
+              <a
+                href={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.ghostBtn}
               >
                 🔗 Open Verification
               </a>
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );
