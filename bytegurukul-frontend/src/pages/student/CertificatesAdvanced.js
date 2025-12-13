@@ -121,76 +121,75 @@ function CertificatesAdvanced() {
       </div>
 
       <div>
-      {/* Loading State */}
-      {loading && (
-        <div style={styles.centeredMessage}>
-          <p>Loading certificates...</p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && !loading && (
-        <div style={styles.centeredMessage}>
-          <p style={{ color: '#e74c3c' }}>{error}</p>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && certificates.length === 0 && (
-        <div style={styles.centeredMessage}>
-          <p>No certificates yet. Complete courses to earn certificates!</p>
-        </div>
-      )}
-
-      {/* Grid */}
-      {!loading && certificates.length > 0 && (
-        <div style={styles.grid}>
-          {certificates.map((cert) => (
-            <div key={cert.id} style={styles.card}>
-              <div style={styles.topRow}>
-                <div>
-                  <div style={styles.organization}>ByteGurukul</div>
-                  <div style={styles.name}>{cert.User?.name || 'Student'}</div>
-                  <div style={styles.course}>{cert.Course?.title || 'Course'}</div>
-                </div>
-
-                <div style={{ textAlign: "right" }}>
-                  <QRCodeSVG value={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`} size={90} />
-                  <div style={styles.scanLabel}>Scan to verify</div>
-                </div>
-              </div>
-
-              <div style={styles.meta}>
-                <Fragment>
-                  <span>Certificate ID: {cert.certificateNumber}</span>
-                  <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
-                </Fragment>
-              </div>
-
-              {/* Buttons */}
-            <div style={styles.buttonRow}>
-              <button
-                style={styles.primaryBtn}
-                onClick={() => {
-                  // Download from backend
-                  window.location.href = `${process.env.REACT_APP_API_URL}/certificates/${cert.id}/download`;
-                }}
-              >
-                ⬇ Download PDF
-              </button>
-
-              <a
-                href={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`}
-                target="_blank"
-                rel="noreferrer"
-                style={styles.ghostBtn}
-              >
-                🔗 Open Verification
-              </a>
-            </div>
+        {/* Loading State */}
+        {loading && (
+          <div style={styles.centeredMessage}>
+            <p>Loading certificates...</p>
           </div>
-        ))}
-      </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div style={styles.centeredMessage}>
+            <p style={{ color: '#e74c3c' }}>{error}</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && certificates.length === 0 && (
+          <div style={styles.centeredMessage}>
+            <p>No certificates yet. Complete courses to earn certificates!</p>
+          </div>
+        )}
+
+        {/* Grid */}
+        {!loading && certificates.length > 0 && (
+          <div style={styles.grid}>
+            {certificates.map((cert) => (
+              <div key={cert.id} style={styles.card}>
+                <div style={styles.topRow}>
+                  <div>
+                    <div style={styles.organization}>ByteGurukul</div>
+                    <div style={styles.name}>{cert.User?.name || 'Student'}</div>
+                    <div style={styles.course}>{cert.Course?.title || 'Course'}</div>
+                  </div>
+
+                  <div style={{ textAlign: "right" }}>
+                    <QRCodeSVG value={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`} size={90} />
+                    <div style={styles.scanLabel}>Scan to verify</div>
+                  </div>
+                </div>
+
+                <div style={styles.meta}>
+                  <Fragment>
+                    <span>Certificate ID: {cert.certificateNumber}</span>
+                    <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
+                  </Fragment>
+                </div>
+
+                {/* Buttons */}
+                <div style={styles.buttonRow}>
+                  <button
+                    style={styles.primaryBtn}
+                    onClick={() => { exportAsPDF(cert);
+                    }}
+                  >
+                    ⬇ Download PDF
+                  </button>
+
+                  <a
+                    href={`${process.env.REACT_APP_API_URL}/certificates/verify/${cert.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.ghostBtn}
+                  >
+                    🔗 Open Verification
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        )} {/* <--- THIS WAS MISSING: Closes the check from line 147 */}
       </div>
     </div>
   );
@@ -264,6 +263,22 @@ const styles = {
     textDecoration: "none",
     fontWeight: 500,
   },
+
+  centeredMessage: {
+    textAlign: "center",
+    padding: "20px",
+    color: "#6b7280",
+    fontSize: "16px",
+  },
+
+  meta: {
+    display: "flex",
+    flexDirection: "column",
+    marginTop: 12,
+    fontSize: 12,
+    color: "#4b5563",
+    gap: 4
+  }
 };
 
 export default CertificatesAdvanced;

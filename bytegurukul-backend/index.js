@@ -37,10 +37,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize Passport
 app.use(passport.initialize());
-app.use('/api/admin', adminRoutes);
 
 // Serve Static Files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Basic Test Route
 app.get('/api', (req, res) => {
