@@ -1,13 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useCart } from '../contexts/CartContext';
-import { Link } from 'react-router-dom';
-import { FaShoppingCart, FaStar, FaLevelUpAlt, FaTag, FaHeart, FaEye } from 'react-icons/fa'; 
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaShoppingCart, FaStar, FaLevelUpAlt, FaTag, FaHeart, FaEye, FaCreditCard } from 'react-icons/fa';
+import api from '../services/api'; // Import the API service
+import { studentService } from '../services/studentService';
 
 // --- Component: Project Card ---
-const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, getDifficultyColor, formatCurrency, handleToggleDetails }) => {
+const ProjectCard = React.memo(({ project, styles, handleAddToCart, handleBuyNow, isInCart, getDifficultyColor, formatCurrency, handleToggleDetails }) => {
   const [showDetails, setShowDetails] = useState(false);
   
   // Mock data for Wishlist status (since CartContext only handles Cart)
+  // In a real app, this should also likely be checked against a user's wishlist API
   const [isWished, setIsWished] = useState(
       localStorage.getItem(`project_wish_${project.id}`) === 'true'
   );
@@ -16,7 +21,6 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
       const newState = !isWished;
       setIsWished(newState);
       localStorage.setItem(`project_wish_${project.id}`, newState);
-      // NOTE: Using console log/custom UI instead of alert for professional apps
       console.log(newState ? `${project.title} added to Wishlist!` : `${project.title} removed from Wishlist.`);
   };
 
@@ -28,7 +32,7 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
         {/* Top Info & Icon */}
         <div style={styles.cardHeader}>
             <div style={styles.iconWrapper}>
-                <span style={styles.icon}>{project.icon}</span>
+                <span style={styles.icon}>{project.icon || '🚀'}</span>
                 {/* Price Tag with Gradient based on difficulty */}
                 <span style={{
                     ...styles.price, 
@@ -59,7 +63,7 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
         <div style={styles.techStack}>
             <FaTag size={12} style={{color: '#64748b', marginRight: '5px', flexShrink: 0}} />
             <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
-                {project.technologies.map((tech, techIndex) => (
+                {project.technologies?.map((tech, techIndex) => (
                     <span key={techIndex} style={styles.techTag}>
                     {tech}
                     </span>
@@ -80,7 +84,7 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
               <div style={styles.detailsContent}>
                   <strong>Includes:</strong>
                   <ul style={styles.featuresList}>
-                      {project.features.map((feature, index) => (
+                      {project.features?.map((feature, index) => (
                       <li key={index}>✓ {feature}</li>
                       ))}
                   </ul>
@@ -95,9 +99,18 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
         {/* Actions */}
         <div style={styles.actions}>
             <button className="demo-button" style={styles.demoButton}>View Demo</button>
-            
+
+            {/* Buy Now Button */}
+            <button
+                className="buy-now-button"
+                style={styles.buyNowButton}
+                onClick={() => handleBuyNow(project)}
+            >
+                <FaCreditCard style={{marginRight: '5px'}} /> Buy Now
+            </button>
+
             {/* Wishlist Button */}
-            <button 
+            <button
                 onClick={handleWishlist}
                 style={{...styles.wishlistButton, backgroundColor: isWished ? '#ef4444' : '#e5e7eb', color: isWished ? 'white' : '#1e293b'}}
                 title={isWished ? "Remove from Wishlist" : "Save to Wishlist"}
@@ -110,7 +123,7 @@ const ProjectCard = React.memo(({ project, styles, handleAddToCart, isInCart, ge
                 ✓ Added to Cart
             </button>
             ) : (
-            <button 
+            <button
                 className="add-to-cart-button"
                 style={styles.addToCartButton}
                 onClick={() => handleAddToCart(project)}
@@ -129,16 +142,37 @@ function Projects() {
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [selectedTech, setSelectedTech] = useState('all'); // NEW: Tech filter
   const { addToCart, isInCart, getCartItemsCount } = useCart();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   
-  // MOCK DATA UPDATED WITH REALISTIC PRICES, RATINGS, and DIFFICULTY
-  const projects = useMemo(() => [
-    { id: '1', title: 'E-Commerce Website', domain: 'Web Development', price: 49, technologies: ['React', 'Node.js', 'MongoDB', 'Stripe'], description: 'Full-stack e-commerce platform with payment integration, admin panel, and inventory management', icon: '🛒', features: ['Payment Integration', 'Admin Dashboard', 'User Authentication', 'Product Reviews'], rating: 4.8, difficulty: 'Intermediate' },
-    { id: '2', title: 'Weather App', domain: 'Mobile Development', price: 49, technologies: ['Android', 'Kotlin', 'API Integration'], description: 'Real-time weather application with location services and 7-day forecast', icon: '🌤️', features: ['Location Services', '7-Day Forecast', 'Weather Alerts'], rating: 4.5, difficulty: 'Beginner' },
-    { id: '3', title: 'Student Management System', domain: 'Desktop Application', price: 49, technologies: ['Java', 'MySQL', 'Swing'], description: 'Complete student record management system with attendance and grade tracking', icon: '🎓', features: ['Student Records', 'Attendance System', 'Grade Management'], rating: 4.2, difficulty: 'Intermediate' },
-    { id: '4', title: 'Chat Application', domain: 'Web Development', price: 49, technologies: ['React', 'Socket.io', 'Express'], description: 'Real-time chat application with multiple rooms, file sharing, and emoji support', icon: '💬', features: ['Real-time Chat', 'File Sharing', 'Multiple Rooms'], rating: 4.7, difficulty: 'Advanced' },
-    { id: '5', title: 'Expense Tracker', domain: 'Mobile Development', price: 49, technologies: ['Flutter', 'Firebase', 'Charts'], description: 'Personal finance management app with analytics and budget planning', icon: '💰', features: ['Expense Analytics', 'Budget Planning', 'Reports'], rating: 4.6, difficulty: 'Beginner' },
-    { id: '6', title: 'Library Management', domain: 'Web Development', price: 49, technologies: ['PHP', 'MySQL', 'Bootstrap'], description: 'Digital library system with book tracking, member management, and fine calculation', icon: '📖', features: ['Book Tracking', 'Member Management', 'Fine System'], rating: 4.1, difficulty: 'Intermediate' }
-  ], []);
+  // STATE UPDATED: Replaced mock data with real state
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // FETCH PROJECTS FROM BACKEND
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get('/projects');
+        if (response.data && response.data.success) {
+          setProjects(response.data.data);
+        } else {
+          // Fallback if data structure is different
+          console.warn("Unexpected API response structure:", response.data);
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error("Failed to load projects:", err);
+        setError("Failed to load projects. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   // Filter projects (combined logic)
   const filteredProjects = useMemo(() => {
@@ -146,7 +180,10 @@ function Projects() {
       const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             project.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDomain = selectedDomain === 'all' || project.domain === selectedDomain;
-      const matchesTech = selectedTech === 'all' || project.technologies.includes(selectedTech);
+      
+      // Safe check for technologies array
+      const projectTechs = project.technologies || [];
+      const matchesTech = selectedTech === 'all' || projectTechs.includes(selectedTech);
 
       return matchesSearch && matchesDomain && matchesTech;
     });
@@ -155,13 +192,23 @@ function Projects() {
   const domains = useMemo(() => ['all', ...new Set(projects.map(project => project.domain))], [projects]);
   
   const allTechnologies = useMemo(() => {
-    const techs = projects.flatMap(p => p.technologies);
+    const techs = projects.flatMap(p => p.technologies || []);
     return ['all', ...new Set(techs)];
   }, [projects]);
   
   const handleAddToCart = (project) => {
     // Ensuring the price/quantity structure is correct for the Cart Context
-    addToCart({ ...project, price: project.price, quantity: 1 }); 
+    addToCart({ ...project, price: project.price, quantity: 1 });
+  };
+
+  const handleBuyNow = (project) => {
+    if (!user) {
+      showToast('Please login to purchase projects', 'error');
+      navigate('/login');
+      return;
+    }
+    // Navigate to checkout with the project
+    navigate('/checkout', { state: { items: [{ ...project, quantity: 1 }] } });
   };
 
   const formatCurrency = (amount) => {
@@ -180,6 +227,26 @@ function Projects() {
       default: return '#64748b';
     }
   };
+
+  // Loading State
+  if (loading) {
+    return (
+      <div style={{ ...styles.container, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <h2>Loading Projects...</h2>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div style={{ ...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <h2 style={{ color: '#ef4444' }}>Oops!</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} style={styles.demoButton}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -256,6 +323,7 @@ function Projects() {
             project={project}
             styles={styles}
             handleAddToCart={handleAddToCart}
+            handleBuyNow={handleBuyNow}
             isInCart={isInCart}
             getDifficultyColor={getDifficultyColor}
             formatCurrency={formatCurrency}
@@ -594,6 +662,20 @@ const styles = {
     borderRadius: '8px',
     cursor: 'not-allowed',
     fontWeight: '700'
+  },
+  buyNowButton: {
+    flex: 1.5,
+    padding: '12px',
+    backgroundColor: '#7c3aed', // Purple color for buy now
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '700',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   wishlistButton: {
     flex: 0.5,

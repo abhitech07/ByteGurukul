@@ -33,7 +33,7 @@ function Checkout() {
     }).format(amount);
   };
 
-  // --- MODIFIED HANDLE ORDER FUNCTION ---
+  // --- RAZORPAY INTEGRATION ---
   const handlePlaceOrder = async () => {
     if (!user) {
       alert('Please login to place an order');
@@ -46,58 +46,92 @@ function Checkout() {
     setIsProcessing(true);
 
     try {
-      // Process each item in the cart
-      // (Backend currently handles 1 course at a time, so we loop)
+      // Loop through items (Since backend handles one item per order currently)
       for (const item of cart) {
           
-        // 1. Create Order
-        const response = await studentService.createOrder(item.id);
+        // 1. Create Order on Backend
+        // We assume 'project' type for now, change to 'course' if needed based on item data
+        const itemType = item.domain ? 'project' : 'course'; 
+        const data = await studentService.createOrder(item.id, itemType);
         
-        if (response.success && response.order) {
-            const { order } = response;
-
-            // Check if it is a Mock Order (No Razorpay ID)
-            if (order.isMock) {
-                console.log(`Processing Mock Payment for ${item.title}...`);
-                
-                const verifyData = {
-                    razorpay_order_id: order.id,
-                    razorpay_payment_id: "mock_pay_" + Date.now(),
-                    razorpay_signature: "mock_sig",
-                    courseId: item.id,
-                    isMock: true
-                };
-                
-                // 2. Verify & Enroll
-                await studentService.verifyOrder(verifyData);
-            } else {
-                // Real Razorpay logic would go here in future
-                alert("Razorpay ID not found. Using backend Mock mode.");
-            }
+        if (!data.success) {
+            throw new Error(data.message || "Order creation failed");
         }
+
+        // 2. Open Razorpay Popup
+        const options = {
+            key: data.keyId, // Comes from backend
+            amount: data.amount,
+            currency: data.currency,
+            name: "ByteGurukul",
+            description: `Purchase: ${item.title}`,
+            order_id: data.orderId, // Razorpay Order ID
+            handler: async function (response) {
+                try {
+                    // 3. Verify Payment on Backend
+                    const verifyData = {
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                        dbOrderId: data.dbOrderId
+                    };
+                    
+                    await studentService.verifyOrder(verifyData);
+                    
+                    // Success!
+                    showToast(`Successfully purchased ${item.title}!`, 'success');
+                    
+                    // If this is the last item, redirect
+                    if (item === cart[cart.length - 1]) {
+                        if(clearCart) clearCart(); 
+                        navigate('/order-success');
+                    }
+
+                } catch (verifyError) {
+                    console.error("Verification Error:", verifyError);
+                    showToast("Payment verification failed. Contact support.", 'error');
+                }
+            },
+            prefill: {
+                name: user.name,
+                email: user.email,
+                contact: user.phone || ""
+            },
+            theme: {
+                color: "#2563eb"
+            },
+            modal: {
+                ondismiss: function() {
+                    setIsProcessing(false);
+                    showToast("Payment cancelled", 'info');
+                }
+            }
+        };
+
+        // Check if Razorpay script is loaded
+        if (!window.Razorpay) {
+            alert("Razorpay SDK failed to load. Please check your internet connection.");
+            setIsProcessing(false);
+            return;
+        }
+
+        const rzp1 = new window.Razorpay(options);
+        rzp1.on('payment.failed', function (response){
+            showToast(response.error.description || "Payment Failed", 'error');
+            setIsProcessing(false);
+        });
+        
+        rzp1.open();
+        
+        // Break loop to handle one payment at a time (Standard for Razorpay Popups)
+        // Ideally, you should bundle all items into ONE backend order to avoid multiple popups.
+        break; 
       }
 
-      // Order Complete
-      setIsProcessing(false);
-      
-      // Show success toast
-      showToast('Order placed successfully! Courses added to your library.', 'success');
-      
-      // Clear Cart locally
-      if(clearCart) clearCart(); 
-
-      // Redirect
-      const dummyOrderData = {
-        id: "ORDER-" + Date.now(),
-        total: total,
-        date: new Date().toLocaleDateString()
-      };
-      navigate('/order-success', { state: { order: dummyOrderData } });
-
     } catch (error) {
-      console.error("Payment Failed:", error);
+      console.error("Payment Init Failed:", error);
       setIsProcessing(false);
-      showToast(error.message || "Payment failed. Please try again.", 'error');
+      showToast(error.message || "Payment initiation failed", 'error');
     }
   };
 
@@ -215,7 +249,7 @@ function Checkout() {
               ...(isProcessing ? styles.processingButton : {})
             }}
           >
-            {isProcessing ? 'Processing Payment...' : `Confirm & Pay ${formatCurrency(total)}`}
+            {isProcessing ? 'Processing Payment...' : `Pay ${formatCurrency(total)} via Razorpay`}
           </button>
 
           <div style={styles.securityNote}>

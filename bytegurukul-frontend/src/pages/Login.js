@@ -29,7 +29,7 @@ function Login() {
   // --- NEW FUNCTION FOR SOCIAL LOGIN ---
   const handleSocialLogin = (provider) => {
     // Redirect browser to Backend URL
-    window.location.href = `http://localhost:5000/api/auth/${provider}`;
+    window.location.href = `http://localhost:5003/api/auth/${provider}`;
   };
 
   return (

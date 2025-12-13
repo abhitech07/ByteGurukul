@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom'; // FIXED: Added Link
 import { useCourse } from '../contexts/CourseContext';
 
 function LearningPage() {
   const { courseId } = useParams();
-  const { updateCourseProgress } = useCourse();
+  
+  // FIXED: Destructured missing functions from context
+  const { 
+    updateCourseProgress, 
+    getEnrolledCourse, 
+    getCourseProgress 
+  } = useCourse();
+  
   const navigate = useNavigate();
 
   const [currentModule, setCurrentModule] = useState(0);
@@ -119,21 +126,28 @@ function LearningPage() {
   };
 
   const course = courseContent[courseId];
-  const enrolledCourse = getEnrolledCourse(courseId);
+  
+  // Note: getEnrolledCourse needs to return data safely or null
+  const enrolledCourse = getEnrolledCourse ? getEnrolledCourse(courseId) : null;
 
   // Redirect if not enrolled
   useEffect(() => {
-    if (!enrolledCourse) {
+    // If getEnrolledCourse isn't available or returns null, we handle it here
+    if (!enrolledCourse && getEnrolledCourse) {
       alert('You are not enrolled in this course');
       navigate('/courses');
       return;
     }
 
     // Load progress
-    const progress = getCourseProgress(courseId);
-    setCurrentModule(progress.currentModule || 0);
-    setCurrentLesson(progress.currentLesson || 0);
-  }, [courseId, enrolledCourse, navigate, getCourseProgress]);
+    if (getCourseProgress) {
+        const progress = getCourseProgress(courseId);
+        if (progress) {
+            setCurrentModule(progress.currentModule || 0);
+            setCurrentLesson(progress.currentLesson || 0);
+        }
+    }
+  }, [courseId, enrolledCourse, navigate, getCourseProgress, getEnrolledCourse]);
 
   if (!course || !enrolledCourse) {
     return (

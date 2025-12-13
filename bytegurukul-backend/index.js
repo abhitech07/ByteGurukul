@@ -1,11 +1,11 @@
-require('dotenv').config(); // Must be at the very top
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
 const path = require('node:path'); 
-const { sequelize } = require('./models'); 
+const db = require('./models'); // Import the whole db object
 const passport = require('passport'); 
 
-// Import Config (Passport Strategy)
+// Import Config
 require('./config/passport'); 
 
 // Import Routes
@@ -27,26 +27,23 @@ const submissionRoutes = require('./routes/submissionRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 
+// --- NEW: Import Project Routes ---
+const projectRoutes = require('./routes/projectRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+
 const app = express();
-const PORT = process.env.PORT || 5002;
+// Use PORT 5003 to avoid conflict if 5002 is stuck
+const PORT = process.env.PORT || 5003; 
 
 // Middleware
 app.use(cors()); 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); 
 
-// Initialize Passport
 app.use(passport.initialize());
-
-// Serve Static Files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Basic Test Route
-app.get('/api', (req, res) => {
-  res.send('ByteGurukul Backend is Running!');
-});
-
-// Mount API routes
+// Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/lectures', lectureRoutes);     
@@ -64,14 +61,21 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// --- NEW: Mount Project & Payment Routes ---
+app.use('/api/projects', projectRoutes);
+app.use('/api/payments', paymentRoutes);
+
 // Start Server
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   try {
-    await sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
-    await sequelize.sync();
-    console.log('Database synchronized.');
+    await db.sequelize.authenticate();
+    console.log('Database connection established.');
+    
+    // Use the custom sync function to fix table order
+    await db.syncDatabase(); 
+    
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }

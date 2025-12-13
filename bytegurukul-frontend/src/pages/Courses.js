@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCourse } from "../contexts/CourseContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function Courses() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -10,118 +11,33 @@ function Courses() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const courses = [
-    {
-      id: "ds-101",
-      name: "Data Structures",
-      code: "KCS301",
-      semester: 3,
-      credits: 4,
-      instructor: "Dr. Sharma",
-      icon: "📚",
-      description:
-        "Learn fundamental data structures and algorithms. Master arrays, linked lists, trees, and sorting algorithms.",
-      level: "Beginner",
-      modules: 6,
-      lessons: 24,
-      price: 0,
-      thumbnail: "🧩",
-      learningOutcomes: [
-        "Understand time and space complexity",
-        "Implement various data structures",
-        "Solve algorithmic problems",
-        "Prepare for technical interviews",
-      ],
-    },
-    {
-      id: "db-301",
-      name: "Database Management",
-      code: "KCS503",
-      semester: 5,
-      credits: 3,
-      instructor: "Dr. Gupta",
-      icon: "🗄️",
-      description:
-        "Complete database design and management. SQL, normalization, transactions, and NoSQL databases.",
-      level: "Beginner",
-      modules: 5,
-      lessons: 20,
-      price: 0,
-      thumbnail: "💾",
-      learningOutcomes: [
-        "Design relational databases",
-        "Write complex SQL queries",
-        "Understand database normalization",
-        "Work with NoSQL databases",
-      ],
-    },
-    {
-      id: "os-401",
-      name: "Operating Systems",
-      code: "KCS401",
-      semester: 4,
-      credits: 4,
-      instructor: "Prof. Singh",
-      icon: "💻",
-      description:
-        "Deep dive into operating system concepts. Process management, memory management, and file systems.",
-      level: "Intermediate",
-      modules: 7,
-      lessons: 28,
-      price: 0,
-      thumbnail: "🖥️",
-      learningOutcomes: [
-        "Understand OS architecture",
-        "Learn process scheduling",
-        "Master memory management",
-        "Study file system design",
-      ],
-    },
-    {
-      id: "cn-501",
-      name: "Computer Networks",
-      code: "KCS603",
-      semester: 6,
-      credits: 3,
-      instructor: "Dr. Kumar",
-      icon: "🌐",
-      description:
-        "Comprehensive networking course covering protocols, network security, and internet technologies.",
-      level: "Intermediate",
-      modules: 6,
-      lessons: 24,
-      price: 0,
-      thumbnail: "📡",
-      learningOutcomes: [
-        "Understand network protocols",
-        "Configure network devices",
-        "Learn network security",
-        "Master internet technologies",
-      ],
-    },
-    {
-      id: "se-601",
-      name: "Software Engineering",
-      code: "KCS601",
-      semester: 6,
-      credits: 3,
-      instructor: "Prof. Joshi",
-      icon: "🔧",
-      description:
-        "Software development lifecycle, agile methodologies, testing, and project management.",
-      level: "Beginner",
-      modules: 6,
-      lessons: 26,
-      price: 0,
-      thumbnail: "🏗️",
-      learningOutcomes: [
-        "Master software development lifecycle",
-        "Learn agile methodologies",
-        "Understand software testing",
-        "Manage software projects",
-      ],
-    },
-  ];
+  // STATE UPDATED: Replaced mock data with real state
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // FETCH COURSES FROM BACKEND
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('/courses');
+        if (response.data && response.data.success) {
+          setCourses(response.data.data);
+        } else {
+          // Fallback if data structure is different
+          console.warn("Unexpected API response structure:", response.data);
+          setCourses([]);
+        }
+      } catch (err) {
+        console.error("Failed to load courses:", err);
+        setError("Failed to load courses. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
 
   // Filter courses
   const filteredCourses = courses.filter((course) => {
@@ -146,6 +62,26 @@ function Courses() {
   const handleContinueLearning = (courseId) => {
     navigate(`/learn/${courseId}`);
   };
+
+  // Loading State
+  if (loading) {
+    return (
+      <div style={{ ...styles.container, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <h2>Loading Courses...</h2>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div style={{ ...styles.container, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <h2 style={{ color: '#ef4444' }}>Oops!</h2>
+        <p>{error}</p>
+        <button onClick={() => window.location.reload()} style={styles.demoButton}>Retry</button>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>

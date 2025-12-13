@@ -3,6 +3,10 @@ const router = express.Router();
 const { Application, Task, Submission, User } = require('../models');
 const { protect } = require('../middleware/auth');
 const { adminAuth } = require('../middleware/adminAuth');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+const { sendEmail, internshipOfferEmail } = require('../utils/sendEmail');
 
 // --- APPLICATION ROUTES (Existing) ---
 

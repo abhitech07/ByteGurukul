@@ -1,4 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
+require('dotenv').config();
+
 const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,
@@ -29,6 +31,9 @@ db.Pyq = require('./Pyq')(sequelize, DataTypes);
 db.Review = require('./Review')(sequelize, DataTypes);
 db.Wishlist = require('./Wishlist')(sequelize, DataTypes);
 db.Order = require('./Order')(sequelize, DataTypes);
+
+// --- NEW: Register Project Model ---
+db.Project = require('./Project')(sequelize, DataTypes); 
 
 // Associations
 db.User.hasMany(db.Course, { foreignKey: 'instructorId' });
@@ -62,7 +67,6 @@ db.Course.hasMany(db.Order, { foreignKey: 'courseId' });
 db.Order.belongsTo(db.Course, { foreignKey: 'courseId' });
 
 // SYNC ORDER (IMPORTANT)
-// Step-by-step table creation to avoid FK errors
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
@@ -89,6 +93,9 @@ async function syncDatabase() {
     await db.Review.sync();
     await db.Wishlist.sync();
     await db.Order.sync();
+    
+    // --- NEW: Sync Project Table ---
+    await db.Project.sync(); 
 
     console.log("All tables created successfully!");
 

@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-// FIXED: Use environment variable with fallback to localhost
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
+// FIXED: Point to Port 5003
+const API_BASE_URL = 'http://localhost:5003/api';
 
-// Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -12,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add auth token to every request
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -26,20 +25,21 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle common errors
+// Response interceptor
 api.interceptors.response.use(
   (response) => {
-    return response.data;
+    return response; // Return full response, not just data, to be safe
   },
   (error) => {
-    // Handle common errors
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      globalThis.location.href = '/login';
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+         window.location.href = '/login';
+      }
     }
-    
-    return Promise.reject(error.response?.data || error.message);
+    return Promise.reject(error);
   }
 );
 

@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    code: { // Added Course Code
+    code: { 
       type: DataTypes.STRING,
       allowNull: true
     },
@@ -22,20 +22,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0.00
     },
-    category: { // Added Category
+    category: { 
       type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'Programming'
     },
-    level: { // Added Level
+    level: { 
       type: DataTypes.STRING,
       defaultValue: 'Beginner'
     },
-    duration: { // Added Duration
+    duration: { 
       type: DataTypes.STRING,
       allowNull: true
     },
-    thumbnail: { // Added Image Path
+    thumbnail: { 
       type: DataTypes.STRING,
       allowNull: true
     },
@@ -43,10 +43,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', 
+            model: 'users', // Ensure this matches your User table name
             key: 'id',
         }
     }
+  }, {
+    tableName: 'courses' // <--- THIS FIXED THE ERROR
   });
 
   return Course;

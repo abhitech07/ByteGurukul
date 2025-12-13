@@ -1,31 +1,32 @@
 import api from './api';
 
 export const studentService = {
-  // Order Create karna
-  createOrder: async (courseId) => {
+  // Create Order (Modified for Razorpay)
+  createOrder: async (itemId, itemType = 'project') => {
     try {
-      const response = await api.post('/student/order/create', { courseId });
-      return response; // Returns { success: true, order: {...} }
+      // Calls the new Payment Controller we created
+      const response = await api.post('/payments/create-order', { itemId, itemType });
+      return response.data; 
     } catch (error) {
-      throw error;
+      throw error.response?.data?.message || "Failed to create order";
     }
   },
 
-  // Payment Verify aur Enrollment Confirm karna
+  // Verify Payment (Modified for Razorpay Signature)
   verifyOrder: async (paymentData) => {
     try {
-      const response = await api.post('/student/order/verify', paymentData);
-      return response;
+      const response = await api.post('/payments/verify', paymentData);
+      return response.data;
     } catch (error) {
-      throw error;
+      throw error.response?.data?.message || "Payment verification failed";
     }
   },
 
-  // User ke enrolled courses lana
+  // User ke enrolled courses lana (Existing)
   getMyLearnings: async () => {
     try {
       const response = await api.get('/student/my-learnings');
-      return response;
+      return response.data;
     } catch (error) {
       throw error;
     }

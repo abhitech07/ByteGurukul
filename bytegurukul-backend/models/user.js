@@ -27,9 +27,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
-    role: { 
+    role: {
       type: DataTypes.STRING,
       defaultValue: 'student'
+    },
+    authProvider: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null
     },
     resetPasswordToken: {
       type: DataTypes.STRING,

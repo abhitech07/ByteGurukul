@@ -28,6 +28,11 @@ const sendEmail = async (options) => {
       html: options.message
     };
 
+    // Add attachments if provided
+    if (options.attachments) {
+      mailOptions.attachments = options.attachments;
+    }
+
     await transport.sendMail(mailOptions);
     console.log(`Email sent successfully to ${options.email}`);
   } catch (error) {
@@ -109,11 +114,41 @@ const taskGradedEmail = (userName, taskTitle, grade, maxGrade, feedback) => ({
   `
 });
 
+// Template for internship offer letter
+const internshipOfferEmail = (userName, role) => ({
+  subject: `Internship Offer Letter - ${role}`,
+  message: `
+    <h2>Congratulations, ${userName}!</h2>
+    <p>You have been selected for the <strong>${role}</strong> internship position at ByteGurukul.</p>
+    <p>Please find attached your official Internship Offer Letter.</p>
+    <p>Kindly review the terms and conditions and confirm your acceptance.</p>
+    <br><br>
+    <p>Welcome to the team!</p>
+    <p>ByteGurukul Team</p>
+  `
+});
+
+// Template for internship certificate
+const internshipCertificateEmail = (userName) => ({
+  subject: `Internship Completion Certificate`,
+  message: `
+    <h2>Congratulations, ${userName}!</h2>
+    <p>You have successfully completed your internship at ByteGurukul.</p>
+    <p>Please find attached your Internship Completion Certificate.</p>
+    <p>This certificate recognizes your dedication and hard work during the internship period.</p>
+    <br><br>
+    <p>Best wishes for your future endeavors!</p>
+    <p>ByteGurukul Team</p>
+  `
+});
+
 module.exports = {
   sendEmail,
   enrollmentEmail,
   certificateEmail,
   commentNotificationEmail,
   taskSubmissionEmail,
-  taskGradedEmail
+  taskGradedEmail,
+  internshipOfferEmail,
+  internshipCertificateEmail
 };
