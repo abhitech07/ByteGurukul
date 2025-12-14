@@ -90,6 +90,30 @@ router.put('/applications/:appId/approve', protect, adminAuth, async (req, res) 
         application.approvedAt = new Date();
         await application.save();
 
+        // Generate PDF offer letter
+        const pdfBuffer = await new Promise((resolve, reject) => {
+            const doc = new PDFDocument();
+            const buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => resolve(Buffer.concat(buffers)));
+            doc.on('error', reject);
+
+            doc.text(`Offer Letter for ${application.roleId} - ${application.name}`);
+            doc.end();
+        });
+
+        // Prepare email
+        const { subject, message } = internshipOfferEmail(application.name, application.roleId);
+        await sendEmail({
+            email: application.email,
+            subject,
+            message,
+            attachments: [{
+                filename: 'offer_letter.pdf',
+                content: pdfBuffer
+            }]
+        });
+
         res.json({ success: true, message: "Application approved", data: application });
     } catch (error) {
         res.status(500).json({ message: error.message });

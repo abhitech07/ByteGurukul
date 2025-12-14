@@ -31,9 +31,8 @@ db.Pyq = require('./Pyq')(sequelize, DataTypes);
 db.Review = require('./Review')(sequelize, DataTypes);
 db.Wishlist = require('./Wishlist')(sequelize, DataTypes);
 db.Order = require('./Order')(sequelize, DataTypes);
-
-// --- NEW: Register Project Model ---
-db.Project = require('./Project')(sequelize, DataTypes); 
+db.Project = require('./Project')(sequelize, DataTypes);
+db.Chat = require('./Chat')(sequelize, DataTypes);
 
 // Associations
 db.User.hasMany(db.Course, { foreignKey: 'instructorId' });
@@ -93,9 +92,8 @@ async function syncDatabase() {
     await db.Review.sync();
     await db.Wishlist.sync();
     await db.Order.sync();
-    
-    // --- NEW: Sync Project Table ---
-    await db.Project.sync(); 
+    await db.Project.sync();
+    await db.Chat.sync();
 
     console.log("All tables created successfully!");
 

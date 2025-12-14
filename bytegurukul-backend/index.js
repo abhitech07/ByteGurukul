@@ -1,20 +1,19 @@
-require('dotenv').config(); 
-const express = require('express');
+require('dotenv').config();
+const express = require('express'); // <--- THIS WAS MISSING
 const cors = require('cors');
-const path = require('node:path'); 
-const db = require('./models'); // Import the whole db object
-const passport = require('passport'); 
+const path = require('node:path');
+const db = require('./models');
+const passport = require('passport');
 
-// Import Config
-require('./config/passport'); 
+require('./config/passport');
 
 // Import Routes
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
-const internshipRoutes = require('./routes/internshipRoutes'); 
+const internshipRoutes = require('./routes/internshipRoutes');
 const lectureRoutes = require('./routes/lectureRoutes');
-const pyqRoutes = require('./routes/pyqRoutes'); 
+const pyqRoutes = require('./routes/pyqRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
@@ -26,30 +25,26 @@ const taskRoutes = require('./routes/taskRoutes');
 const submissionRoutes = require('./routes/submissionRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-
-// --- NEW: Import Project Routes ---
 const projectRoutes = require('./routes/projectRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
-// Use PORT 5003 to avoid conflict if 5002 is stuck
-const PORT = process.env.PORT || 5003; 
+const PORT = process.env.PORT || 5003;
 
-// Middleware
-app.use(cors()); 
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Routes
+// Mount Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/lectures', lectureRoutes);     
-app.use('/api/courses', courseRoutes); 
-app.use('/api/internship', internshipRoutes); 
-app.use('/api/pyq', pyqRoutes); 
+app.use('/api/courses', courseRoutes);
+app.use('/api/lectures', lectureRoutes);
+app.use('/api/internship', internshipRoutes);
+app.use('/api/pyq', pyqRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/reviews', reviewRoutes);
@@ -61,8 +56,6 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/analytics', analyticsRoutes);
-
-// --- NEW: Mount Project & Payment Routes ---
 app.use('/api/projects', projectRoutes);
 app.use('/api/payments', paymentRoutes);
 
@@ -72,10 +65,7 @@ app.listen(PORT, async () => {
   try {
     await db.sequelize.authenticate();
     console.log('Database connection established.');
-    
-    // Use the custom sync function to fix table order
-    await db.syncDatabase(); 
-    
+    await db.syncDatabase();
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }

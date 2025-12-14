@@ -1,17 +1,24 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { Order, Project, Course, User } = require('../models');
+const { Order, Project, Course, User, Enrollment } = require('../models');
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// Initialize Razorpay only if keys are available
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+  });
+}
 
 // @desc    Create a new order (Razorpay)
 // @route   POST /api/payments/create-order
 exports.createOrder = async (req, res) => {
   try {
+    if (!razorpay) {
+      return res.status(500).json({ message: 'Payment service not configured' });
+    }
+
     const { itemId, itemType } = req.body; // itemType: 'course' or 'project'
     const userId = req.user.id;
 

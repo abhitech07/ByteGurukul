@@ -1,23 +1,34 @@
 // src/pages/internship/RecruiterChat.js
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
 import InternshipNavbar from "../../components/internship/InternshipNavbar";
 import { Link } from "react-router-dom";
 
 export default function RecruiterChat() {
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "recruiter", text: "Hi Abhijeet — thanks for applying. Do you have time for a quick chat?" },
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
   const bottomRef = useRef();
 
+  useEffect(() => {
+    axios.get('/api/chat/history').then(response => setMessages(response.data)).catch(console.error);
+  }, []);
+
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
 
-  const send = () => {
+  const send = async () => {
     if (!text.trim()) return;
-    setMessages((m) => [...m, { id: Date.now(), sender: "you", text }]);
+    setLoading(true);
+    try {
+      await axios.post('/api/chat/send', { text });
+      const response = await axios.get('/api/chat/history');
+      setMessages(response.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
     setText("");
-    // mock auto reply
-    setTimeout(() => setMessages((m) => [...m, { id: Date.now() + 1, sender: "recruiter", text: "Thanks — we'll review and get back to you." }]), 800);
   };
 
   return (
@@ -44,7 +55,7 @@ export default function RecruiterChat() {
 
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #e6eef8" }} />
-              <button onClick={send} style={{ background: "#2563eb", color: "white", border: "none", padding: "10px 14px", borderRadius: 8 }}>Send</button>
+              <button onClick={send} disabled={loading} style={{ background: "#2563eb", color: "white", border: "none", padding: "10px 14px", borderRadius: 8 }}>Send</button>
             </div>
           </div>
 

@@ -112,6 +112,8 @@ function AdminDashboard() {
   // --- STATE ---
   const [pendingApplications, setPendingApplications] = useState([]);
   const [loadingApps, setLoadingApps] = useState(true);
+  const [platformStats, setPlatformStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [systemMetrics, setSystemMetrics] = useState({
     uptime: 99.8,
     responseTime: 124,
@@ -135,6 +137,25 @@ function AdminDashboard() {
       }
     };
     fetchApplications();
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:5000/api/analytics/admin/dashboard", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success) {
+          setPlatformStats(res.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchStats();
   }, []);
 
   useEffect(() => {
@@ -167,13 +188,6 @@ function AdminDashboard() {
   };
 
   // --- DATA & THEME CONFIG ---
-  const platformStats = {
-    totalUsers: 12543,
-    totalCourses: 287,
-    totalRevenue: "124,850",
-    courseEnrollments: 4587,
-    newUsersThisMonth: 324
-  };
 
   const recentActivities = [
     { type: "user_signup", message: "New user registered: John Doe", time: "2 mins ago", priority: "high" },
@@ -229,28 +243,34 @@ function AdminDashboard() {
         </div>
 
         {/* 2. STATS GRID */}
-        <div style={styles.grid4}>
-            <StatCard 
-                icon={FaUsers} title="Total Users" value={platformStats.totalUsers} 
-                trend={`↑ ${platformStats.newUsersThisMonth} new`} trendColor={colors.accent} 
-                isDark={isDark} colors={colors} progress={85} subtitle="Active this week" 
+        {loadingStats ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: colors.secondary }}>
+            <FaSync className="spin" size={32} /> Loading platform statistics...
+          </div>
+        ) : (
+          <div style={styles.grid4}>
+            <StatCard
+                icon={FaUsers} title="Total Users" value={platformStats?.totalUsers || 0}
+                trend={`↑ ${platformStats?.recentEnrollments7Days || 0} new`} trendColor={colors.accent}
+                isDark={isDark} colors={colors} progress={85} subtitle="Active this week"
             />
-            <StatCard 
-                icon={FaBook} title="Total Courses" value={platformStats.totalCourses} 
-                trend="↑ 12 published" trendColor={colors.success} 
-                isDark={isDark} colors={colors} progress={72} subtitle="Engagement rate" 
+            <StatCard
+                icon={FaBook} title="Total Courses" value={platformStats?.totalCourses || 0}
+                trend="↑ 12 published" trendColor={colors.success}
+                isDark={isDark} colors={colors} progress={72} subtitle="Engagement rate"
             />
-            <StatCard 
-                icon={FaDollarSign} title="Revenue (YTD)" value={platformStats.totalRevenue} 
-                trend="↑ 15% growth" trendColor={colors.success} 
-                isDark={isDark} colors={colors} progress={92} subtitle="On target" 
+            <StatCard
+                icon={FaDollarSign} title="Revenue (YTD)" value={platformStats?.totalRevenue || 0}
+                trend="↑ 15% growth" trendColor={colors.success}
+                isDark={isDark} colors={colors} progress={92} subtitle="On target"
             />
-            <StatCard 
-                icon={FaChartLine} title="Enrollments" value={platformStats.courseEnrollments} 
-                trend="↑ 8% increase" trendColor={colors.warning} 
-                isDark={isDark} colors={colors} progress={68} subtitle="Completion rate" 
+            <StatCard
+                icon={FaChartLine} title="Enrollments" value={platformStats?.totalEnrollments || 0}
+                trend="↑ 8% increase" trendColor={colors.warning}
+                isDark={isDark} colors={colors} progress={68} subtitle="Completion rate"
             />
-        </div>
+          </div>
+        )}
 
         {/* 3. DASHBOARD COLUMNS */}
         <div style={styles.gridMain}>
