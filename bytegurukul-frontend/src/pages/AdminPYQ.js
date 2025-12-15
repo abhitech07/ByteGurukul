@@ -24,7 +24,7 @@ function AdminPYQ() {
 
   const fetchPapers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/pyq');
+      const response = await fetch('http://localhost:5003/api/pyq');
       const data = await response.json();
       if (data.success) {
         setPapers(data.data);
@@ -64,7 +64,7 @@ function AdminPYQ() {
 
     try {
       // Backend API Call
-      const response = await fetch('http://localhost:5000/api/pyq', {
+      const response = await fetch('http://localhost:5003/api/pyq', {
         method: 'POST',
         headers: {
           // FormData ke saath 'Content-Type' header mat lagana, browser khud set karega boundary ke saath
@@ -100,7 +100,7 @@ function AdminPYQ() {
     if (!window.confirm("Are you sure you want to delete this paper?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/pyq/${id}`, {
+      const response = await fetch(`http://localhost:5003/api/pyq/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': localStorage.getItem('token') || '',
@@ -272,9 +272,9 @@ function AdminPYQ() {
                           <span style={styles.tagOutline}>{paper.semester} Sem</span>
                         </td>
                         <td style={styles.td}>
-                          <a 
-                            href={`http://localhost:5000${paper.filePath}`} 
-                            target="_blank" 
+                          <a
+                            href={`http://localhost:5003${paper.filePath}`}
+                            target="_blank"
                             rel="noreferrer"
                             style={styles.fileLink}
                           >

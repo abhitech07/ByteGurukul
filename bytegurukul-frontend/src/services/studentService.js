@@ -30,5 +30,15 @@ export const studentService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Get user orders
+  getOrders: async () => {
+    try {
+      const response = await api.get('/student/orders');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

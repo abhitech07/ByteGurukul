@@ -32,7 +32,7 @@ function StudentSubmissions() {
   const fetchSubmissions = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/submissions/my-submissions", {
+      const res = await axios.get("http://localhost:5003/api/submissions/my-submissions", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -104,7 +104,7 @@ function StudentSubmissions() {
                 {sub.fileUrl && (
                   <div style={{ marginBottom: "10px" }}>
                     <FaFileDownload style={{ marginRight: "10px", color: colors.secondary }} />
-                    <a href={`http://localhost:5000/${sub.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: "none" }}>
+                    <a href={`http://localhost:5003/${sub.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent, textDecoration: "none" }}>
                       Download Submitted File
                     </a>
                   </div>

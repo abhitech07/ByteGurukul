@@ -32,6 +32,15 @@ module.exports = function defineOrder(sequelize, DataTypes) {
       },
       onDelete: 'CASCADE',
     },
+    applicationId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'Applications',
+        key: 'id',
+      },
+      onDelete: 'CASCADE',
+    },
     orderId: {
       type: DataTypes.STRING(255),
       allowNull: false,

@@ -20,7 +20,7 @@ export default function InternshipStatus() {
   const fetchMyApplications = async () => {
     try {
       // Fetch data from the new backend route we just created
-      const res = await axios.get(`http://localhost:5000/api/internship/student/${studentEmail}`);
+      const res = await axios.get(`http://localhost:5003/api/internship/student/${studentEmail}`);
       
       if (res.data.success) {
         // Format the DB data to match our UI structure

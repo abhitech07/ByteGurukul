@@ -53,7 +53,7 @@ function InstructorCreateCourse() {
       // 2. Send to Backend
       const token = localStorage.getItem('token') || ""; // Get Token from storage
       
-      const response = await fetch('http://localhost:5000/api/courses', {
+      const response = await fetch('http://localhost:5003/api/courses', {
         method: 'POST',
         headers: {
           'Authorization': token, // Send Token

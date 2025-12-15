@@ -20,6 +20,11 @@ function CertificatesAdvanced() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Internship states
+  const [internshipApplications, setInternshipApplications] = useState([]);
+  const [loadingInternship, setLoadingInternship] = useState(true);
+  const [errorInternship, setErrorInternship] = useState(null);
+
   // Fetch certificates from backend
   useEffect(() => {
     const fetchCertificates = async () => {
@@ -39,6 +44,28 @@ function CertificatesAdvanced() {
 
     if (user) {
       fetchCertificates();
+    }
+  }, [user]);
+
+  // Fetch internship applications
+  useEffect(() => {
+    const fetchInternshipApplications = async () => {
+      try {
+        setLoadingInternship(true);
+        const response = await api.get('/internship/my-applications');
+        if (response.data.success) {
+          setInternshipApplications(response.data.data);
+        }
+      } catch (err) {
+        setErrorInternship(err.response?.data?.message || 'Failed to load internship applications');
+        showToast(errorInternship, 'error');
+      } finally {
+        setLoadingInternship(false);
+      }
+    };
+
+    if (user) {
+      fetchInternshipApplications();
     }
   }, [user]);
 
@@ -105,6 +132,49 @@ function CertificatesAdvanced() {
         document.body.removeChild(wrapper);
       }
     }, 300);
+  };
+
+  // Handle internship certificate payment
+  const handleInternshipPayment = async (applicationId) => {
+    try {
+      const response = await api.post('/payments/create-order', {
+        itemType: 'internship_certificate',
+        amount: 9,
+        itemId: applicationId
+      });
+      if (response.data.success) {
+        const { orderId, amount, currency } = response.data.data;
+
+        const options = {
+          key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+          amount: amount,
+          currency: currency,
+          name: 'ByteGurukul',
+          description: 'Internship Certificate Payment',
+          order_id: orderId,
+          handler: async (response) => {
+            // Payment successful, refetch internship applications
+            const appsResponse = await api.get('/internship/my-applications');
+            if (appsResponse.data.success) {
+              setInternshipApplications(appsResponse.data.data);
+              showToast('Payment successful! Certificate unlocked.', 'success');
+            }
+          },
+          prefill: {
+            name: user.name,
+            email: user.email,
+          },
+          theme: {
+            color: '#2563eb',
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Payment failed', 'error');
+    }
   };
 
   return (
@@ -190,6 +260,96 @@ function CertificatesAdvanced() {
             ))}
           </div>
         )} {/* <--- THIS WAS MISSING: Closes the check from line 147 */}
+
+        {/* Internship Certificates Section */}
+        <div style={{ marginTop: 40 }}>
+          <h2 style={styles.sectionTitle}>Internship Certificates</h2>
+
+          {/* Loading State */}
+          {loadingInternship && (
+            <div style={styles.centeredMessage}>
+              <p>Loading internship applications...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {errorInternship && !loadingInternship && (
+            <div style={styles.centeredMessage}>
+              <p style={{ color: '#e74c3c' }}>{errorInternship}</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loadingInternship && !errorInternship && internshipApplications.length === 0 && (
+            <div style={styles.centeredMessage}>
+              <p>No internship applications yet. Apply for internships to earn certificates!</p>
+            </div>
+          )}
+
+          {/* Grid */}
+          {!loadingInternship && internshipApplications.length > 0 && (
+            <div style={styles.grid}>
+              {internshipApplications.map((app) => (
+                <div key={app.id} style={styles.card}>
+                  <div style={styles.topRow}>
+                    <div>
+                      <div style={styles.organization}>ByteGurukul</div>
+                      <div style={styles.name}>{user?.name || 'Student'}</div>
+                      <div style={styles.course}>Internship Certificate</div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      {app.isCertificatePaid ? (
+                        <QRCodeSVG value={`${process.env.REACT_APP_API_URL}/internship/certificates/verify/${app.id}`} size={90} />
+                      ) : (
+                        <div style={{ width: 90, height: 90, background: '#f3f4f6', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 24 }}>🔒</span>
+                        </div>
+                      )}
+                      <div style={styles.scanLabel}>{app.isCertificatePaid ? 'Scan to verify' : 'Locked'}</div>
+                    </div>
+                  </div>
+
+                  <div style={styles.meta}>
+                    <span>Application ID: {app.id}</span>
+                    <span>Status: {app.internshipStatus}</span>
+                    {app.isCertificatePaid && <span>Paid: Yes</span>}
+                  </div>
+
+                  {/* Buttons */}
+                  <div style={styles.buttonRow}>
+                    {app.isCertificatePaid ? (
+                      <>
+                        <button
+                          style={styles.primaryBtn}
+                          onClick={() => exportAsPDF(app)}
+                        >
+                          ⬇ Download PDF
+                        </button>
+
+                        <a
+                          href={`${process.env.REACT_APP_API_URL}/internship/certificates/verify/${app.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={styles.ghostBtn}
+                        >
+                          🔗 Open Verification
+                        </a>
+                      </>
+                    ) : (
+                      <button
+                        style={styles.primaryBtn}
+                        onClick={() => handleInternshipPayment(app.id)}
+                      >
+                        Pay ₹9 for Certificate
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -212,6 +372,7 @@ const styles = {
 
   title: { fontSize: 22, fontWeight: 700 },
   subtitle: { color: "#64748b" },
+  sectionTitle: { fontSize: 20, fontWeight: 600, marginBottom: 16 },
 
   backLink: {
     color: "#2563eb",

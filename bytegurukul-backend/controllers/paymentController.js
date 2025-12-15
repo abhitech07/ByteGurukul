@@ -1,6 +1,6 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const { Order, Project, Course, User, Enrollment } = require('../models');
+const { Order, Project, Course, User, Enrollment, Application } = require('../models');
 
 // Initialize Razorpay only if keys are available
 let razorpay = null;
@@ -19,22 +19,29 @@ exports.createOrder = async (req, res) => {
       return res.status(500).json({ message: 'Payment service not configured' });
     }
 
-    const { itemId, itemType } = req.body; // itemType: 'course' or 'project'
+    const { itemId, itemType } = req.body; // itemType: 'course', 'project', or 'internship_certificate'
     const userId = req.user.id;
 
     let item;
+    let amount;
     if (itemType === 'project') {
       item = await Project.findByPk(itemId);
-    } else {
+      if (!item) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      amount = item.price * 100; // Amount in Paisa (INR * 100)
+    } else if (itemType === 'course') {
       item = await Course.findByPk(itemId);
+      if (!item) {
+        return res.status(404).json({ message: 'Course not found' });
+      }
+      amount = item.price * 100; // Amount in Paisa (INR * 100)
+    } else if (itemType === 'internship_certificate') {
+      // No item fetch needed, fixed amount for certificate
+      amount = 900; // 9 INR in Paisa
+    } else {
+      return res.status(400).json({ message: 'Invalid itemType' });
     }
-
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
-    }
-
-    // Amount must be in Paisa (INR * 100)
-    const amount = item.price * 100;
     const currency = 'INR';
 
     const options = {
@@ -52,8 +59,9 @@ exports.createOrder = async (req, res) => {
       userId,
       courseId: itemType === 'course' ? itemId : null,
       projectId: itemType === 'project' ? itemId : null,
+      applicationId: itemType === 'internship_certificate' ? itemId : null,
       orderId: order.id,
-      amount: item.price,
+      amount: amount, // Amount in Paisa
       currency: 'INR',
       status: 'created',
       isMock: false,
@@ -101,7 +109,16 @@ exports.verifyPayment = async (req, res) => {
 
       // 2. Enroll User (Unlock Content)
       // Add logic here to add entry to "Enrollments" or "PurchasedProjects" table
-      
+
+      // Unlock certificate if itemType is 'internship_certificate'
+      if (order.applicationId) {
+        const application = await Application.findByPk(order.applicationId);
+        if (application) {
+          application.isCertificatePaid = true;
+          await application.save();
+        }
+      }
+
       res.json({ success: true, message: "Payment Verified Successfully" });
     } else {
       res.status(400).json({ success: false, message: "Invalid Signature" });

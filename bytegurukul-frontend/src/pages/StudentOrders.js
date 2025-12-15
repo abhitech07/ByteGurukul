@@ -1,9 +1,10 @@
 // src/pages/StudentOrders.js
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { Link } from "react-router-dom";
 import { downloadInvoicePDF } from "../components/InvoicePrintable";
+import { studentService } from "../services/studentService";
 
 function StudentOrders() {
   const { user } = useAuth();
@@ -12,57 +13,32 @@ function StudentOrders() {
   // PDF reference
   const invoiceRef = useRef();
 
-  // fallback mock orders
-  const initialOrders = useMemo(() => {
-    if (Array.isArray(cartOrders) && cartOrders.length) return cartOrders;
-
-    return [
-      {
-        id: "ORD-2025-001",
-        date: "2025-10-06",
-        status: "Completed",
-        amount: 499,
-        currency: "INR",
-        items: [
-          { id: "proj-101", title: "Final Year Project - Face Recognition", price: 299, qty: 1 },
-          { id: "mini-201", title: "Mini Project - Chat App", price: 200, qty: 1 },
-        ],
-        billing: {
-          name: "Abhijeet Kumar Pandey",
-          email: "abhijeet@bytegurukul.in",
-          phone: "6386569211",
-          address: "Nonar Pandey, Deoria, UP 274702",
-        },
-        payment: {
-          method: "Razorpay (test)",
-          id: "PAY-12345",
-        },
-      },
-      {
-        id: "ORD-2025-002",
-        date: "2025-11-02",
-        status: "Refunded",
-        amount: 249,
-        currency: "INR",
-        items: [{ id: "course-322", title: "Node.js Crash Course", price: 249, qty: 1 }],
-        billing: {
-          name: "Priya Sharma",
-          email: "priya@bytegurukul.in",
-          phone: "9876543210",
-          address: "Lucknow, UP",
-        },
-        payment: {
-          method: "Stripe (test)",
-          id: "PAY-54321",
-        },
-      },
-    ];
-  }, [cartOrders]);
-
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await studentService.getOrders();
+        setOrders(response.data || []);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        setError('Failed to load orders. Please try again.');
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const filtered = orders.filter((o) => {
     const matchFilter = filter === "all" || o.status.toLowerCase() === filter.toLowerCase();
@@ -88,6 +64,20 @@ function StudentOrders() {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "Cancelled" } : o)));
   };
 
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await studentService.getOrders();
+      setOrders(response.data || []);
+    } catch (err) {
+      console.error('Error refreshing orders:', err);
+      setError('Failed to refresh orders. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={styles.page}>
       {/* HEADER */}
@@ -103,9 +93,10 @@ function StudentOrders() {
           </Link>
           <button
             style={styles.btnPrimary}
-            onClick={() => setOrders(initialOrders)}
+            onClick={handleRefresh}
+            disabled={loading}
           >
-            Refresh
+            {loading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -126,6 +117,10 @@ function StudentOrders() {
           <option value="Pending">Pending</option>
         </select>
       </div>
+
+      {/* LOADING/ERROR MESSAGES */}
+      {loading && <div style={styles.message}>Loading orders...</div>}
+      {error && <div style={styles.error}>{error}</div>}
 
       {/* GRID */}
       <div style={styles.grid}>
@@ -382,6 +377,22 @@ const styles = {
   },
 
   emptyDetail: { padding: 24, color: "#64748b" },
+  message: {
+    padding: "12px 16px",
+    background: "#eef2ff",
+    color: "#2563eb",
+    borderRadius: 8,
+    marginBottom: 16,
+    textAlign: "center"
+  },
+  error: {
+    padding: "12px 16px",
+    background: "#fee2e2",
+    color: "#991b1b",
+    borderRadius: 8,
+    marginBottom: 16,
+    textAlign: "center"
+  },
 };
 
 export default StudentOrders;

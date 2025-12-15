@@ -71,31 +71,31 @@ db.Sequelize = Sequelize;
 
 async function syncDatabase() {
   try {
-    // Core tables first
-    await db.User.sync();
-    await db.Course.sync();
-    await db.Lecture.sync();
+    // Core tables first - use alter: true to add missing columns like authProvider
+    await db.User.sync({ alter: true });
+    await db.Course.sync({ alter: true });
+    await db.Lecture.sync({ alter: true });
 
     // Enrollment + Progress after core
-    await db.Enrollment.sync();
-    await db.Progress.sync();
-    await db.LectureProgress.sync();
+    await db.Enrollment.sync({ alter: true });
+    await db.Progress.sync({ alter: true });
+    await db.LectureProgress.sync({ alter: true });
 
     // Additional models
-    await db.Application.sync();
-    await db.Certificate.sync();
-    await db.Comment.sync();
-    await db.Notification.sync();
-    await db.Task.sync();
-    await db.Submission.sync();
-    await db.Pyq.sync();
-    await db.Review.sync();
-    await db.Wishlist.sync();
-    await db.Order.sync();
-    await db.Project.sync();
-    await db.Chat.sync();
+    await db.Application.sync({ alter: true });
+    await db.Certificate.sync({ alter: true });
+    await db.Comment.sync({ alter: true });
+    await db.Notification.sync({ alter: true });
+    await db.Task.sync({ alter: true });
+    await db.Submission.sync({ force: true }); // Force recreate to fix grade column type issue
+    await db.Pyq.sync({ alter: true });
+    await db.Review.sync({ alter: true });
+    await db.Wishlist.sync({ alter: true });
+    await db.Order.sync({ force: true }); // Force recreate to fix orderId column type issue
+    await db.Project.sync({ alter: true });
+    await db.Chat.sync({ alter: true });
 
-    console.log("All tables created successfully!");
+    console.log("All tables created/updated successfully!");
 
   } catch (error) {
     console.error("ERROR creating database tables:", error);

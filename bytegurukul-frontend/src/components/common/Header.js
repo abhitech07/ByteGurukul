@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FaBars, FaTimes } from 'react-icons/fa'; // FIXED: Imported icons for mobile menu
+import { FaBars, FaTimes } from 'react-icons/fa';
 
 function Header() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // FIXED: State for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
-  // Helper to safely get the display name
   const getDisplayName = () => {
     if (!user) return '';
     return user.username || user.name || 'Student';
@@ -34,8 +33,8 @@ function Header() {
   const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
-    <header style={styles.header}>
-      <div style={styles.container}>
+    <header style={styles.header} className="main-header">
+      <div style={styles.container} className="header-container">
         {/* Logo */}
         <div style={styles.logo}>
           <Link to="/" style={styles.logoLink}>
@@ -43,8 +42,8 @@ function Header() {
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav style={styles.navDesktop}>
+        {/* Desktop Navigation - Added className for responsive targeting */}
+        <nav style={styles.navDesktop} className="desktop-nav">
           <Link to="/" style={{ ...styles.navLink, ...(isActive('/') ? styles.activeNavLink : {}) }}>
             Home
           </Link>
@@ -76,8 +75,8 @@ function Header() {
           )}
         </nav>
 
-        {/* Controls (Theme & Auth) for Desktop */}
-        <div style={styles.controlsDesktop}>
+        {/* Controls (Theme & Auth) for Desktop - Added className */}
+        <div style={styles.controlsDesktop} className="desktop-controls">
           <button
             onClick={toggleTheme}
             style={styles.themeButton}
@@ -86,7 +85,7 @@ function Header() {
             {isDarkMode ? '☀️' : '🌙'}
           </button>
 
-          <div style={styles.auth}>
+          <div style={styles.auth} className="desktop-auth">
             {user ? (
               <>
                 <span style={styles.userWelcome}>Hi, {getDisplayName()}</span>
@@ -102,14 +101,14 @@ function Header() {
         </div>
 
         {/* Mobile Hamburger Button */}
-        <button style={styles.hamburgerBtn} onClick={toggleMenu}>
+        <button style={styles.hamburgerBtn} onClick={toggleMenu} className="hamburger-btn">
            {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
         </button>
       </div>
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div style={styles.mobileMenu}>
+        <div style={styles.mobileMenu} className="mobile-menu-dropdown">
            <Link to="/" onClick={toggleMenu} style={styles.mobileNavLink}>Home</Link>
            <Link to="/courses" onClick={toggleMenu} style={styles.mobileNavLink}>Courses</Link>
            <Link to="/internship" onClick={toggleMenu} style={styles.mobileNavLink}>Internship</Link>
@@ -123,8 +122,8 @@ function Header() {
                 <button onClick={() => { logout(); toggleMenu(); }} style={styles.logoutBtn}>Logout ({getDisplayName()})</button>
               ) : (
                 <div style={{display:'flex', gap:'10px'}}>
-                  <Link to="/login" onClick={toggleMenu}><button style={styles.loginBtn}>Login</button></Link>
-                  <Link to="/signup" onClick={toggleMenu}><button style={styles.signupBtn}>Sign Up</button></Link>
+                  <Link to="/login" onClick={toggleMenu} style={{flex: 1}}><button style={{...styles.loginBtn, width: '100%'}}>Login</button></Link>
+                  <Link to="/signup" onClick={toggleMenu} style={{flex: 1}}><button style={{...styles.signupBtn, width: '100%'}}>Sign Up</button></Link>
                 </div>
               )}
            </div>
@@ -142,7 +141,9 @@ const styles = {
     borderBottom: '1px solid var(--border)',
     position: 'sticky',
     top: 0,
-    zIndex: 100,
+    zIndex: 1000, // Increased z-index for safety
+    width: '100%',
+    boxSizing: 'border-box',
   },
   container: {
     display: 'flex',
@@ -150,41 +151,44 @@ const styles = {
     justifyContent: 'space-between',
     flexWrap: 'nowrap',
     width: '100%',
-    maxWidth: '1200px',
+    maxWidth: '1440px', // Increased for large screens
     margin: '0 auto',
   },
   logo: { flexShrink: 0 },
   logoLink: { textDecoration: 'none' },
   logoText: {
     color: 'var(--primary)',
-    fontSize: '20px',
+    fontSize: '24px', // Slightly larger
     fontWeight: 'bold',
     margin: 0,
   },
-  // Desktop Nav - Hidden on mobile via media query injection logic below or CSS
   navDesktop: {
     display: 'flex',
-    gap: '20px',
+    gap: '15px',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    margin: '0 20px',
   },
   controlsDesktop: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
+    flexShrink: 0,
   },
   hamburgerBtn: {
-    display: 'none', // Hidden by default, shown on mobile via media query below
+    display: 'none', 
     background: 'none',
     border: 'none',
     fontSize: '24px',
     color: 'var(--text-primary)',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: '5px',
+    zIndex: 1001,
   },
   mobileMenu: {
     position: 'absolute',
-    top: '60px',
+    top: '100%',
     left: 0,
     right: 0,
     backgroundColor: 'var(--surface)',
@@ -193,15 +197,17 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '15px',
-    boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
+    boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
+    zIndex: 999,
   },
   mobileNavLink: {
     textDecoration: 'none',
     color: 'var(--text-primary)',
     fontSize: '16px',
     fontWeight: '500',
-    padding: '8px 0',
-    borderBottom: '1px solid var(--border)'
+    padding: '12px 0',
+    borderBottom: '1px solid var(--border)',
+    display: 'block',
   },
   mobileControls: {
     display: 'flex',
@@ -213,10 +219,11 @@ const styles = {
     textDecoration: 'none',
     color: 'var(--text-secondary)',
     fontWeight: '500',
-    padding: '6px 10px',
+    padding: '8px 12px',
     borderRadius: '5px',
     transition: 'all 0.2s ease',
     fontSize: '15px',
+    whiteSpace: 'nowrap',
   },
   activeNavLink: {
     backgroundColor: 'var(--primary)',
@@ -224,13 +231,16 @@ const styles = {
     fontWeight: '600',
   },
   themeButton: {
-    padding: '5px 8px',
+    padding: '6px 10px',
     border: '1px solid var(--border)',
     backgroundColor: 'transparent',
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    color: 'var(--text-primary)'
+    color: 'var(--text-primary)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   auth: {
     display: 'flex',
@@ -241,51 +251,70 @@ const styles = {
     color: 'var(--text-primary)',
     fontSize: '14px',
     fontWeight: '500',
+    whiteSpace: 'nowrap',
   },
   loginBtn: {
-    padding: '6px 12px',
+    padding: '8px 16px',
     border: '1.5px solid var(--primary)',
     backgroundColor: 'transparent',
     color: 'var(--primary)',
-    borderRadius: '4px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '14px',
     fontWeight: '600',
+    transition: 'all 0.2s',
   },
   signupBtn: {
-    padding: '6px 12px',
+    padding: '8px 16px',
     border: 'none',
     backgroundColor: 'var(--primary)',
     color: '#fff',
-    borderRadius: '4px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '14px',
     fontWeight: '600',
+    transition: 'all 0.2s',
   },
   logoutBtn: {
-    padding: '6px 12px',
+    padding: '8px 16px',
     border: '1.5px solid var(--error)',
     backgroundColor: 'transparent',
     color: 'var(--error)',
-    borderRadius: '4px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '14px',
     fontWeight: '600',
   },
 };
 
-// Inject Media Queries for Responsiveness
+// Robust Responsive Styles Injection
 const responsiveStyles = `
-  @media (max-width: 768px) {
-    /* Hide desktop nav elements */
-    header nav { display: none !important; }
-    header .auth { display: none !important; } 
-    /* The controls container needs to hide too, except maybe theme toggle? 
-       For simplicity, hide all desktop controls and show hamburger */
-    div[style*="display: flex"][style*="gap: 12px"] { display: none !important; } 
+  /* Tablet and Mobile Breakpoint */
+  @media (max-width: 992px) {
+    .desktop-nav { display: none !important; }
+    .desktop-auth { display: none !important; }
+    /* Hide theme button in header control group, show in mobile menu instead? 
+       Actually, kept it in header for quick access, but adjusted layout */
     
-    /* Show Hamburger */
-    button[style*="display: none"] { display: block !important; }
+    .hamburger-btn { display: block !important; }
+    
+    /* Ensure header container handles space correctly */
+    .header-container {
+      padding: 0 5px;
+    }
+  }
+
+  /* Large Desktop / TV */
+  @media (min-width: 1441px) {
+    .header-container {
+      max-width: 1600px !important;
+    }
+    .desktop-nav {
+      gap: 30px !important;
+    }
+    .nav-link {
+      font-size: 18px !important;
+    }
   }
 `;
 

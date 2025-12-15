@@ -45,6 +45,14 @@ module.exports = (sequelize, DataTypes) => {
     interviewLink: {
       type: DataTypes.STRING, // e.g., Google Meet link
       allowNull: true
+    },
+    internshipStatus: {
+      type: DataTypes.ENUM('applied', 'ongoing', 'completed'),
+      allowNull: true
+    },
+    isCertificatePaid: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
   });
 

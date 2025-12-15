@@ -34,15 +34,15 @@ function Footer() {
 
   return (
     <footer style={styles.footer} className="bytegurukul-footer">
-      <div style={styles.container}>
+      <div style={styles.container} className="footer-container">
         {/* Left Section: Brand & Social */}
-        <div style={styles.brandSection}>
-          <h2 style={styles.brand}>ByteGurukul</h2>
-          <p style={styles.desc}>
+        <div style={styles.brandSection} className="brand-section">
+          <h2 style={styles.brand} className="footer-brand">ByteGurukul</h2>
+          <p style={styles.desc} className="footer-desc">
             Empowering AKTU students with accessible, high-quality learning resources,
             hands-on projects, and professional growth opportunities.
           </p>
-          <div style={styles.socialIcons}>
+          <div style={styles.socialIcons} className="social-icons">
             <a
               href="https://linkedin.com/in/abhitech07"
               target="_blank"
@@ -72,8 +72,8 @@ function Footer() {
         </div>
 
         {/* Middle Section: Quick Links */}
-        <div style={styles.linkSection}>
-          <h4 style={styles.heading}>Quick Links</h4>
+        <div style={styles.linkSection} className="link-section">
+          <h4 style={styles.heading} className="footer-heading">Quick Links</h4>
           {[
             { label: "Courses", to: "/Courses" },
             { label: "Resources", to: "/Resources" },
@@ -87,8 +87,8 @@ function Footer() {
         </div>
 
         {/* Right Section: Support */}
-        <div style={styles.linkSection}>
-          <h4 style={styles.heading}>Support</h4>
+        <div style={styles.linkSection} className="link-section">
+          <h4 style={styles.heading} className="footer-heading">Support</h4>
           {[
             { label: "Help Center", to: "/Help" },
             { label: "Contact Us", to: "/Contact" },
@@ -103,8 +103,8 @@ function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div style={styles.bottomBar}>
-        <p style={styles.copyText}>
+      <div style={styles.bottomBar} className="bottom-bar">
+        <p style={styles.copyText} className="copy-text">
           © 2025 <strong>ByteGurukul</strong> — Designed with ❤️ by Abhijeet Kumar Pandey
         </p>
       </div>
@@ -112,7 +112,7 @@ function Footer() {
   );
 }
 
-/* 🎨 Modern Footer Styles */
+/* 🎨 Modern Footer Styles - Base Styles */
 const styles = {
   footer: {
     background: "linear-gradient(135deg, #1e3a8a, #6d28d9)",
@@ -122,20 +122,24 @@ const styles = {
     boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
     position: "relative",
     zIndex: 10,
+    width: "100%",
+    boxSizing: "border-box", // Ensure padding doesn't overflow width
   },
   container: {
-    maxWidth: "1200px",
+    maxWidth: "1440px", // Increased base max-width for modern screens
     margin: "0 auto",
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: "wrap", // Essential for responsiveness
     justifyContent: "space-between",
     gap: "40px",
+    width: "100%",
   },
   brandSection: {
-    flex: "1 1 300px",
+    flex: "1 1 300px", // Flex grow, shrink, base width
     display: "flex",
     flexDirection: "column",
     gap: "15px",
+    minWidth: "280px", // Prevent crushing on small screens
   },
   brand: {
     fontSize: "28px",
@@ -163,10 +167,11 @@ const styles = {
     transition: "all 0.3s ease",
   },
   linkSection: {
-    flex: "1 1 200px",
+    flex: "1 1 200px", // Flex grow, shrink, base width
     display: "flex",
     flexDirection: "column",
     gap: "12px",
+    minWidth: "150px", // Ensure columns don't get too thin
   },
   heading: {
     fontSize: "18px",
@@ -181,12 +186,14 @@ const styles = {
     fontSize: "15px",
     transition: "all 0.3s ease",
     width: "fit-content",
+    display: "block", // Ensure padding/margins work correctly
   },
   bottomBar: {
     textAlign: "center",
     borderTop: "1px solid rgba(255,255,255,0.15)",
     marginTop: "50px",
     paddingTop: "25px",
+    width: "100%",
   },
   copyText: {
     fontSize: "14px",
@@ -209,7 +216,7 @@ const hoverStyles = `
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
   }
 
-  /* 🛑 FIX: Ensure text remains white on click/focus */
+  /* Ensure text remains white on click/focus */
   .bytegurukul-footer a:active,
   .bytegurukul-footer a:focus {
     background-color: transparent !important;
@@ -218,106 +225,123 @@ const hoverStyles = `
     box-shadow: none !important;
   }
 
-  /* Responsive Footer Styles */
+  /* =========================================
+     RESPONSIVE BREAKPOINTS
+     ========================================= */
 
-  /* Mobile (320px - 768px) */
-  @media (max-width: 768px) {
+  /* Small Mobile (320px - 480px) */
+  @media (max-width: 480px) {
     .bytegurukul-footer {
       padding: 40px 15px 20px !important;
     }
-
-    .bytegurukul-footer .container {
+    .footer-container {
       flex-direction: column !important;
+      align-items: center !important;
       gap: 30px !important;
     }
-
-    .bytegurukul-footer .brand {
-      font-size: 24px !important;
+    .brand-section, .link-section {
       text-align: center !important;
+      align-items: center !important;
+      width: 100% !important;
+      flex: none !important;
     }
-
-    .bytegurukul-footer .desc {
+    .footer-desc {
+      max-width: 100% !important;
       font-size: 14px !important;
-      text-align: center !important;
-      max-width: none !important;
     }
-
-    .bytegurukul-footer .socialIcons {
+    .social-icons {
       justify-content: center !important;
     }
-
-    .bytegurukul-footer .linkSection {
-      text-align: center !important;
-    }
-
-    .bytegurukul-footer .heading {
+    /* Increase touch targets for mobile */
+    .footer-link {
+      padding: 8px 0 !important;
       font-size: 16px !important;
+      width: 100% !important; 
     }
-
-    .bytegurukul-footer .link {
-      font-size: 14px !important;
-    }
-
-    .bytegurukul-footer .bottomBar {
-      text-align: center !important;
-      margin-top: 30px !important;
-      padding-top: 15px !important;
-    }
-
-    .bytegurukul-footer .copyText {
+    .copy-text {
       font-size: 12px !important;
+      line-height: 1.5 !important;
     }
   }
 
-  /* Tablet (769px - 1024px) */
-  @media (min-width: 769px) and (max-width: 1024px) {
-    .bytegurukul-footer .container {
-      gap: 35px !important;
+  /* Mobile to Tablet (481px - 768px) */
+  @media (min-width: 481px) and (max-width: 768px) {
+    .bytegurukul-footer {
+      padding: 50px 20px 25px !important;
     }
+    .footer-container {
+      flex-direction: row !important;
+      justify-content: space-around !important;
+    }
+    /* Brand section takes full width on top, links below side-by-side */
+    .brand-section {
+      width: 100% !important;
+      flex: 0 0 100% !important;
+      text-align: center !important;
+      align-items: center !important;
+      margin-bottom: 20px !important;
+    }
+    .footer-desc {
+      max-width: 80% !important;
+      margin: 0 auto !important;
+    }
+    .social-icons {
+      justify-content: center !important;
+    }
+    .link-section {
+      text-align: left !important;
+      align-items: flex-start !important;
+    }
+  }
 
-    .bytegurukul-footer .brand {
+  /* Tablet to Small Laptop (769px - 1024px) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .footer-container {
+      gap: 30px !important;
+    }
+    .footer-brand {
       font-size: 26px !important;
     }
-
-    .bytegurukul-footer .desc {
+    .footer-link {
       font-size: 14px !important;
     }
   }
 
   /* Desktop (1025px - 1440px) */
   @media (min-width: 1025px) and (max-width: 1440px) {
-    .bytegurukul-footer .container {
+    .footer-container {
       gap: 40px !important;
     }
   }
 
-  /* TV/Ultra-wide (1921px+) */
-  @media (min-width: 1921px) {
+  /* TV / Ultra-Wide (1441px+) */
+  @media (min-width: 1441px) {
     .bytegurukul-footer {
       padding: 80px 40px 40px !important;
     }
-
-    .bytegurukul-footer .container {
+    .footer-container {
+      max-width: 1800px !important;
       gap: 60px !important;
     }
-
-    .bytegurukul-footer .brand {
-      font-size: 32px !important;
+    .footer-brand {
+      font-size: 36px !important;
     }
-
-    .bytegurukul-footer .desc {
-      font-size: 16px !important;
+    .footer-desc {
+      font-size: 18px !important;
+      max-width: 450px !important;
     }
-
-    .bytegurukul-footer .heading {
-      font-size: 20px !important;
+    .footer-heading {
+      font-size: 22px !important;
+      margin-bottom: 12px !important;
     }
-
-    .bytegurukul-footer .link {
-      font-size: 16px !important;
+    .footer-link {
+      font-size: 18px !important;
+      padding: 4px 0 !important;
     }
-
-    .bytegurukul-footer .copyText {
+    .footer-icon {
+      font-size: 28px !important;
+    }
+    .copy-text {
       font-size: 16px !important;
     }
   }

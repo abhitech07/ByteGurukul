@@ -82,7 +82,12 @@ router.post('/login', async (req, res) => {
 // @desc    Register new user
 router.post('/signup', async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { username, email, password, role } = req.body;
+
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: 'Please provide name, email, and password' });
+        }
+
         let user = await User.findOne({ where: { email } });
         if (user) return res.status(400).json({ message: "User already exists" });
 
@@ -91,15 +96,16 @@ router.post('/signup', async (req, res) => {
 
         user = await User.create({
             username: email.split('@')[0] + Date.now(),
-            name,
+            name: username,
             email,
-            password: password, 
+            password: password,
             role: safeRole,
-            phone: '0000000000' 
+            phone: '0000000000'
         });
 
         res.json({ success: true, message: "User registered successfully" });
     } catch (err) {
+        console.error("Signup Error:", err);
         res.status(500).json({ message: err.message });
     }
 });

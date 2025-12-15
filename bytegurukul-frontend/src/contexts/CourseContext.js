@@ -9,13 +9,21 @@ export function CourseProvider({ children }) {
 
   // Load from localStorage on app start
   useEffect(() => {
-    const savedEnrollments = localStorage.getItem('bytegurukul_enrollments');
-    const savedProgress = localStorage.getItem('bytegurukul_course_progress');
-    const savedCompleted = localStorage.getItem('bytegurukul_completed_courses');
-    
-    if (savedEnrollments) setEnrolledCourses(JSON.parse(savedEnrollments));
-    if (savedProgress) setCourseProgress(JSON.parse(savedProgress));
-    if (savedCompleted) setCompletedCourses(JSON.parse(savedCompleted));
+    try {
+      const savedEnrollments = localStorage.getItem('bytegurukul_enrollments');
+      const savedProgress = localStorage.getItem('bytegurukul_course_progress');
+      const savedCompleted = localStorage.getItem('bytegurukul_completed_courses');
+
+      if (savedEnrollments) setEnrolledCourses(JSON.parse(savedEnrollments));
+      if (savedProgress) setCourseProgress(JSON.parse(savedProgress));
+      if (savedCompleted) setCompletedCourses(JSON.parse(savedCompleted));
+    } catch (error) {
+      console.error('Error loading course data from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem('bytegurukul_enrollments');
+      localStorage.removeItem('bytegurukul_course_progress');
+      localStorage.removeItem('bytegurukul_completed_courses');
+    }
   }, []);
 
   // Save to localStorage when data changes

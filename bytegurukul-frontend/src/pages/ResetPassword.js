@@ -14,7 +14,7 @@ function ResetPassword() {
     if (password !== confirmPassword) return setError("Passwords do not match");
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/reset-password/${token}`, {
+      const response = await fetch(`http://localhost:5003/api/auth/reset-password/${token}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

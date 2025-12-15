@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Course, Enrollment, User } = require('../models'); 
+const { Course, Enrollment, User, Order } = require('../models');
 const { protect } = require('../middleware/auth');
 const crypto = require('node:crypto');
 const { sendEmail, enrollmentEmail } = require('../utils/sendEmail');
@@ -31,6 +31,67 @@ router.get('/my-learnings', protect, async (req, res) => {
         res.json({ success: true, data: courses });
     } catch (error) {
         console.error('Error fetching learnings:', error.message);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
+// @route   GET /api/student/orders
+router.get('/orders', protect, async (req, res) => {
+    try {
+        const orders = await Order.findAll({
+            where: { userId: req.user },
+            include: [
+                {
+                    model: Course,
+                    as: 'course',
+                    attributes: ['id', 'title', 'price']
+                },
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['name', 'email', 'phone', 'address']
+                }
+            ],
+            order: [['createdAt', 'DESC']]
+        });
+
+        // Transform data to match frontend expectations
+        const transformedOrders = orders.map(order => {
+            const item = order.course ? {
+                id: `course-${order.course.id}`,
+                title: order.course.title,
+                price: order.course.price,
+                qty: 1
+            } : null;
+
+            // Map status to frontend format
+            let status = 'Pending';
+            if (order.status === 'paid') status = 'Completed';
+            else if (order.status === 'failed') status = 'Cancelled';
+
+            return {
+                id: order.orderId,
+                date: order.createdAt.toISOString().split('T')[0], // YYYY-MM-DD format
+                status: status,
+                amount: order.amount / 100, // Convert from paise to rupees
+                currency: order.currency,
+                items: item ? [item] : [],
+                billing: {
+                    name: order.user?.name || '',
+                    email: order.user?.email || '',
+                    phone: order.user?.phone || '',
+                    address: order.user?.address || ''
+                },
+                payment: {
+                    method: order.isMock ? 'Mock Payment' : 'Razorpay',
+                    id: order.paymentDetails?.razorpay_payment_id || order.orderId
+                }
+            };
+        });
+
+        res.json({ success: true, data: transformedOrders });
+    } catch (error) {
+        console.error('Error fetching orders:', error.message);
         res.status(500).json({ message: "Server Error" });
     }
 });

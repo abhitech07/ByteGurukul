@@ -28,7 +28,7 @@ import AOS from "aos";
 import "aos/dist/aos.css";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import api from "../services/api"; // Ensure you have this service or use axios directly
+import api from "../services/api"; 
 
 // --- CUSTOM HOOK: Number Counter Animation ---
 export const useCounter = (end, duration = 2000) => {
@@ -71,11 +71,12 @@ const AnimatedStatCard = ({ icon: Icon, number, text, color }) => {
         boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.15)' : '0 8px 25px rgba(0,0,0,0.1)',
         borderLeft: `5px solid ${color}`
       }}
+      className="stat-card"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       data-aos="zoom-in"
     >
-      <Icon style={{ fontSize: "50px", color, marginBottom: "15px" }} />
+      <Icon style={{ fontSize: "50px", color, marginBottom: "15px" }} className="stat-icon"/>
       <h3 style={styles.statNumber}>
         {animatedNumber}{number.includes("+") ? "+" : ""}
       </h3>
@@ -90,12 +91,19 @@ const FloatingBackground = () => {
   
   useEffect(() => {
     const canvas = canvasRef.current;
+    if(!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    
+    // Improved resize handler
+    const setDimensions = () => {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    };
+    setDimensions();
     
     const particles = [];
-    const particleCount = 30;
+    // Adjust particle count based on screen width for performance
+    const particleCount = window.innerWidth < 768 ? 15 : 30;
     
     for (let i = 0; i < particleCount; i++) {
       particles.push({
@@ -131,13 +139,8 @@ const FloatingBackground = () => {
     
     animate();
     
-    const handleResize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', setDimensions);
+    return () => window.removeEventListener('resize', setDimensions);
   }, []);
   
   return <canvas ref={canvasRef} style={styles.floatingCanvas} />;
@@ -149,20 +152,16 @@ const DynamicSearchBar = ({ navigate }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // FIXED: Fetch real search results from backend API
   useEffect(() => {
     const fetchResults = async () => {
         if (searchQuery.length > 2) {
             setIsSearching(true);
             try {
-                // Assuming you have an API setup
-                // If not, this catch block will handle it gracefully
                 const response = await api.get(`/courses?search=${searchQuery}`);
                 if (response && response.data) {
                     setSearchResults(response.data.slice(0, 5));
                 }
             } catch (error) {
-                // Fallback mock data if API fails (for demo purposes)
                 const MOCK_RESULTS = [
                     { id: 1, title: "Web Development Bootcamp", category: "Web Dev", rating: 4.8 },
                     { id: 2, title: "Python for Data Science", category: "Data Science", rating: 4.7 }
@@ -174,7 +173,7 @@ const DynamicSearchBar = ({ navigate }) => {
         }
     };
 
-    const timer = setTimeout(fetchResults, 400); // Debounce
+    const timer = setTimeout(fetchResults, 400); 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
@@ -194,11 +193,12 @@ const DynamicSearchBar = ({ navigate }) => {
           }
         }} 
         style={styles.searchContainer}
+        className="search-form-container"
       >
         <FaSearch style={styles.searchIcon} />
         <input
           type="text"
-          placeholder="🔍 Search courses, notes & projects..."
+          placeholder="🔍 Search courses..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={styles.searchInput}
@@ -212,7 +212,7 @@ const DynamicSearchBar = ({ navigate }) => {
       </form>
       
       {searchResults.length > 0 && isSearching && (
-        <div style={styles.searchResultsDropdown}>
+        <div style={styles.searchResultsDropdown} className="search-results-dropdown">
           {searchResults.map((course, index) => (
             <div 
               key={course.id} 
@@ -247,7 +247,7 @@ const DynamicSearchBar = ({ navigate }) => {
 const FeaturedCourses = () => {
   const [filter, setFilter] = useState("All");
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false); // FIXED: Added pause state
+  const [isPaused, setIsPaused] = useState(false);
   const sliderRef = useRef(null);
 
   const courses = [
@@ -334,7 +334,7 @@ const FeaturedCourses = () => {
     beforeChange: (current, next) => setActiveIndex(next),
     responsive: [
       { 
-        breakpoint: 1024, 
+        breakpoint: 1200, 
         settings: { 
           slidesToShow: 2,
           centerMode: false
@@ -345,13 +345,21 @@ const FeaturedCourses = () => {
         settings: { 
           slidesToShow: 1,
           centerMode: false,
-          dots: false // Hide dots on mobile
+          dots: false 
+        } 
+      },
+      { 
+        breakpoint: 480, 
+        settings: { 
+          slidesToShow: 1,
+          centerMode: false,
+          dots: false,
+          arrows: false
         } 
       }
     ]
   };
 
-  // Auto-rotate filter - FIXED: Pauses when hovered
   useEffect(() => {
     if (isPaused) return;
 
@@ -368,16 +376,16 @@ const FeaturedCourses = () => {
         style={styles.categorySection} 
         data-aos="fade-up" 
         data-aos-delay="200"
-        onMouseEnter={() => setIsPaused(true)} // Pause on hover
+        onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        className="featured-section"
     >
-      <div style={styles.sectionHeader}>
-        <h2 style={styles.sectionTitle}>Featured Courses</h2>
-        <p style={styles.sectionSubtitle}>Auto-rotating every 5 seconds • Hover to pause</p>
+      <div style={styles.sectionHeader} className="section-header">
+        <h2 style={styles.sectionTitle} className="section-title">Featured Courses</h2>
+        <p style={styles.sectionSubtitle} className="section-subtitle">Auto-rotating every 5 seconds • Hover to pause</p>
       </div>
       
-      {/* Filter Tabs with Animation */}
-      <div style={styles.filterTabs}>
+      <div style={styles.filterTabs} className="filter-tabs">
         {categories.map((cat, index) => (
           <button
             key={cat}
@@ -391,6 +399,7 @@ const FeaturedCourses = () => {
               borderColor: filter === cat ? '#4F46E5' : '#E5E7EB',
               animation: filter === cat ? 'pulse 2s infinite' : 'none'
             }}
+            className="filter-tab"
           >
             {cat}
             {filter === cat && <span style={styles.activeDot}>●</span>}
@@ -398,21 +407,19 @@ const FeaturedCourses = () => {
         ))}
       </div>
 
-      {/* Animated Course Count */}
       <div style={styles.courseCount}>
         Showing {filteredCourses.length} of {courses.length} courses
       </div>
 
-      {/* Enhanced Carousel */}
       <div style={{ position: 'relative', marginTop: '40px' }} className="course-slider-container">
         <Slider {...sliderSettings}>
           {filteredCourses.map((course, index) => (
-            <div key={course.id} style={{ padding: "20px 10px" }}>
+            <div key={course.id} style={{ padding: "20px 10px" }} className="slick-slide-inner">
               <div 
                 style={{
                   ...styles.courseCard,
-                  transform: activeIndex === index ? 'scale(1.05)' : 'scale(0.95)',
-                  opacity: activeIndex === index ? 1 : 0.8,
+                  transform: activeIndex === index ? 'scale(1.05)' : 'scale(1)',
+                  opacity: activeIndex === index ? 1 : 0.9,
                   borderTop: `4px solid ${course.color}`,
                   boxShadow: activeIndex === index 
                     ? `0 20px 40px ${course.color}40`
@@ -425,7 +432,7 @@ const FeaturedCourses = () => {
                   fontSize: "60px", 
                   marginBottom: "15px",
                   filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
-                }}>
+                }} className="course-emoji">
                   {course.image}
                 </div>
                 <h3 style={styles.courseTitle}>{course.title}</h3>
@@ -437,7 +444,7 @@ const FeaturedCourses = () => {
                   {course.category}
                 </span>
                 
-                <div style={styles.courseMeta}>
+                <div style={styles.courseMeta} className="course-meta">
                   <span style={styles.metaItem}>
                     <FaRegClock style={{ marginRight: '5px' }} />
                     {course.duration}
@@ -452,7 +459,7 @@ const FeaturedCourses = () => {
                   </span>
                 </div>
                 
-                <button style={styles.viewCourseButton}>
+                <button style={styles.viewCourseButton} className="view-course-btn">
                   View Course →
                 </button>
               </div>
@@ -460,24 +467,24 @@ const FeaturedCourses = () => {
           ))}
         </Slider>
         
-        {/* Manual Controls */}
-        <div style={styles.carouselControls}>
+        <div style={styles.carouselControls} className="carousel-controls">
           <button 
             onClick={() => sliderRef.current?.slickPrev()}
             style={styles.controlButton}
+            className="control-btn"
           >
             ◀
           </button>
           <button 
             onClick={() => sliderRef.current?.slickNext()}
             style={styles.controlButton}
+            className="control-btn"
           >
             ▶
           </button>
         </div>
       </div>
       
-      {/* Progress Indicator */}
       <div style={styles.progressIndicator}>
         {filteredCourses.map((_, idx) => (
           <div 
@@ -506,7 +513,7 @@ const ProgressBar = ({ percentage, label }) => {
   }, [percentage]);
   
   return (
-    <div style={styles.progressBarContainer}>
+    <div style={styles.progressBarContainer} className="progress-bar-container">
       <div style={styles.progressBarLabel}>
         <span>{label}</span>
         <span>{percentage}%</span>
@@ -534,14 +541,17 @@ function Home() {
     AOS.init({ 
       duration: 1000,
       once: true,
-      offset: 100
+      offset: 50 // Lower offset for mobile
     });
     
     const handleScroll = () => setShowScroll(window.scrollY > 300);
     window.addEventListener("scroll", handleScroll);
     
+    // Only track mouse on devices that have hover
     const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+       if (window.matchMedia("(hover: hover)").matches) {
+           setMousePosition({ x: e.clientX, y: e.clientY });
+       }
     };
     window.addEventListener("mousemove", handleMouseMove);
     
@@ -562,18 +572,18 @@ function Home() {
   };
 
   return (
-    <div style={styles.container}>
-      {/* Mouse Trailer Effect */}
+    <div style={styles.container} className="home-container">
+      {/* Mouse Trailer Effect - Hidden on Touch Devices via CSS */}
       <div 
         style={{
           ...styles.mouseTrailer,
           left: mousePosition.x,
           top: mousePosition.y,
         }}
+        className="mouse-trailer"
       />
       
-      {/* HERO SECTION with Floating Background */}
-      {/* ADDED CLASSNAME hero-section for Mobile Responsiveness */}
+      {/* HERO SECTION */}
       <section style={styles.hero} className="hero-section">
         <FloatingBackground />
         <div style={styles.heroOverlay} />
@@ -623,15 +633,15 @@ function Home() {
             
             {/* Trust Indicators */}
             <div style={styles.trustIndicators} data-aos="fade-up" data-aos-delay="500" className="hero-trust">
-              <div style={styles.trustItem}>
+              <div style={styles.trustItem} className="trust-item">
                 <FaUsers style={{ color: '#10B981' }} />
                 <span>1,200+ Active Students</span>
               </div>
-              <div style={styles.trustItem}>
+              <div style={styles.trustItem} className="trust-item">
                 <FaStar style={{ color: '#FBBF24' }} />
                 <span>4.8/5 Average Rating</span>
               </div>
-              <div style={styles.trustItem}>
+              <div style={styles.trustItem} className="trust-item">
                 <FaBriefcase style={{ color: '#3B82F6' }} />
                 <span>50+ Internship Placements</span>
               </div>
@@ -654,8 +664,8 @@ function Home() {
         </div>
       </section>
 
-      {/* QUICK STATS - Using Animated Component */}
-      <section style={styles.statsSection} data-aos="fade-up">
+      {/* QUICK STATS */}
+      <section style={styles.statsSection} data-aos="fade-up" className="stats-section">
         <AnimatedStatCard 
           icon={FaUsers} 
           number="1,200+" 
@@ -683,12 +693,12 @@ function Home() {
       </section>
 
       {/* HIGHLIGHTS/TRUST SECTION */}
-      <section style={styles.trustSection} data-aos="fade-up">
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Built for AKTU Students, By Experts</h2>
-          <p style={styles.sectionSubtitle}>Everything you need to excel in your CS journey</p>
+      <section style={styles.trustSection} data-aos="fade-up" className="trust-section">
+        <div style={styles.sectionHeader} className="section-header">
+          <h2 style={styles.sectionTitle} className="section-title">Built for AKTU Students, By Experts</h2>
+          <p style={styles.sectionSubtitle} className="section-subtitle">Everything you need to excel in your CS journey</p>
         </div>
-        <div style={styles.trustGrid}>
+        <div style={styles.trustGrid} className="trust-grid">
           {[
             { icon: FaCertificate, title: "Verified Certification", desc: "Earn industry-recognized certificates upon course completion.", color: "#3B82F6" },
             { icon: FaBriefcase, title: "Internship Opportunities", desc: "Direct access to hands-on, real-world virtual internships.", color: "#8B5CF6" },
@@ -703,6 +713,7 @@ function Home() {
               }}
               data-aos="zoom-in"
               data-aos-delay={index * 100}
+              className="trust-card"
             >
               <item.icon style={{ fontSize: "48px", color: item.color, marginBottom: "20px" }} />
               <h3 style={styles.trustCardTitle}>{item.title}</h3>
@@ -712,16 +723,16 @@ function Home() {
         </div>
       </section>
       
-      {/* FEATURED COURSES (Enhanced Carousel) */}
+      {/* FEATURED COURSES */}
       <FeaturedCourses />
 
       {/* LEARNING PATH PROGRESS */}
-      <section style={styles.progressSection} data-aos="fade-up">
+      <section style={styles.progressSection} data-aos="fade-up" className="progress-section">
         <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Your Learning Journey</h2>
-          <p style={styles.sectionSubtitle}>Track progress across different skill domains</p>
+          <h2 style={styles.sectionTitle} className="section-title">Your Learning Journey</h2>
+          <p style={styles.sectionSubtitle} className="section-subtitle">Track progress across different skill domains</p>
         </div>
-        <div style={styles.progressGrid}>
+        <div style={styles.progressGrid} className="progress-grid">
           <ProgressBar percentage={85} label="Web Development" />
           <ProgressBar percentage={70} label="Data Structures" />
           <ProgressBar percentage={60} label="Cyber Security" />
@@ -730,12 +741,12 @@ function Home() {
       </section>
 
       {/* COURSE CATEGORIES */}
-      <section style={styles.categorySection} data-aos="fade-up">
+      <section style={styles.categorySection} data-aos="fade-up" className="category-section">
         <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Explore Categories</h2>
-          <p style={styles.sectionSubtitle}>Specialized paths for every interest</p>
+          <h2 style={styles.sectionTitle} className="section-title">Explore Categories</h2>
+          <p style={styles.sectionSubtitle} className="section-subtitle">Specialized paths for every interest</p>
         </div>
-        <div style={styles.categoryGrid}>
+        <div style={styles.categoryGrid} className="category-grid">
           {[
             { icon: FaLaptopCode, title: "Web Development", courses: 24, color: "#3B82F6" },
             { icon: FaLock, title: "Cyber Security", courses: 18, color: "#10B981" },
@@ -758,21 +769,21 @@ function Home() {
               <cat.icon style={{ fontSize: "48px", color: cat.color, marginBottom: "15px" }} />
               <h3 style={styles.categoryTitle}>{cat.title}</h3>
               <p style={styles.categoryCourses}>{cat.courses} Courses</p>
-              <div style={styles.categoryHover}>Explore →</div>
+              <div style={styles.categoryHover} className="category-hover">Explore →</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* WHY CHOOSE BYTEGURUKUL */}
-      <section style={styles.features} data-aos="fade-up">
+      <section style={styles.features} data-aos="fade-up" className="features-section">
         <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Why Choose ByteGurukul?</h2>
-          <p style={styles.sectionSubtitle}>Comprehensive platform for complete CS education</p>
+          <h2 style={styles.sectionTitle} className="section-title">Why Choose ByteGurukul?</h2>
+          <p style={styles.sectionSubtitle} className="section-subtitle">Comprehensive platform for complete CS education</p>
         </div>
-        <div style={styles.featuresGrid}>
+        <div style={styles.featuresGrid} className="features-grid">
           <Link to="/pyq-papers" style={styles.featureLink}>
-            <div style={styles.featureCard}>
+            <div style={styles.featureCard} className="feature-card">
               <div style={styles.featureIconContainer}>
                 <FaFileAlt style={styles.featureIcon} />
               </div>
@@ -784,7 +795,7 @@ function Home() {
             </div>
           </Link>
           
-          <div style={styles.featureCard}>
+          <div style={styles.featureCard} className="feature-card">
             <div style={styles.featureIconContainer}>
               <FaBookOpen style={styles.featureIcon} />
             </div>
@@ -795,7 +806,7 @@ function Home() {
             <div style={styles.featureStats}>1000+ Resources</div>
           </div>
           
-          <div style={styles.featureCard}>
+          <div style={styles.featureCard} className="feature-card">
             <div style={styles.featureIconContainer}>
               <FaLaptopCode style={styles.featureIcon} />
             </div>
@@ -809,23 +820,24 @@ function Home() {
       </section>
 
       {/* NEWSLETTER SECTION */}
-      <section style={styles.newsletterSection} data-aos="fade-up">
-        <div style={styles.newsletterContent}>
+      <section style={styles.newsletterSection} data-aos="fade-up" className="newsletter-section">
+        <div style={styles.newsletterContent} className="newsletter-content">
           <FaEnvelope style={styles.newsletterIcon} />
-          <h2 style={styles.newsletterTitle}>Stay Ahead of the Curve</h2>
-          <p style={styles.newsletterText}>
+          <h2 style={styles.newsletterTitle} className="newsletter-title">Stay Ahead of the Curve</h2>
+          <p style={styles.newsletterText} className="newsletter-text">
             Get the latest course updates, internship alerts, and tech news delivered to your inbox.
           </p>
-          <form onSubmit={handleSubscribe} style={styles.newsletterForm}>
+          <form onSubmit={handleSubscribe} style={styles.newsletterForm} className="newsletter-form">
             <input 
               type="email" 
               placeholder="Enter your email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={styles.newsletterInput}
+              className="newsletter-input"
               required
             />
-            <button type="submit" style={styles.newsletterButton}>
+            <button type="submit" style={styles.newsletterButton} className="newsletter-btn">
               Subscribe
             </button>
           </form>
@@ -836,13 +848,13 @@ function Home() {
       </section>
       
       {/* ABOUT SECTION */}
-      <section style={styles.about} data-aos="fade-up">
+      <section style={styles.about} data-aos="fade-up" className="about-section">
         <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>About the Creator</h2>
-          <p style={styles.sectionSubtitle}>Passionate educator building the future of CS learning</p>
+          <h2 style={styles.sectionTitle} className="section-title">About the Creator</h2>
+          <p style={styles.sectionSubtitle} className="section-subtitle">Passionate educator building the future of CS learning</p>
         </div>
-        <div style={styles.aboutContainer}>
-          <div style={styles.aboutImageContainer}>
+        <div style={styles.aboutContainer} className="about-container">
+          <div style={styles.aboutImageContainer} className="about-image-wrapper">
             <img
               src="/abhijeet.jpg"
               alt="Abhijeet Kumar Pandey"
@@ -851,8 +863,8 @@ function Home() {
             />
             <div style={styles.aboutBadge}>Creator</div>
           </div>
-          <div style={styles.aboutContent}>
-            <h3 style={styles.aboutName}>Abhijeet Kumar Pandey</h3>
+          <div style={styles.aboutContent} className="about-content">
+            <h3 style={styles.aboutName} className="about-name">Abhijeet Kumar Pandey</h3>
             <p style={styles.aboutRole}>Cyber Security Analyst | M.Tech (CSE)</p>
             <p style={styles.aboutBio}>
               I'm passionate about technology, cybersecurity, and education.
@@ -860,7 +872,7 @@ function Home() {
               B.Tech & M.Tech students — providing quality study materials,
               projects, and guidance for everyone who dreams big.
             </p>
-            <div style={styles.aboutStats}>
+            <div style={styles.aboutStats} className="about-stats">
               <div style={styles.stat}>
                 <span style={styles.statNumber}>3+</span>
                 <span style={styles.statLabel}>Years Experience</span>
@@ -879,17 +891,17 @@ function Home() {
       </section>
 
       {/* CTA SECTION */}
-      <section style={styles.ctaSection} data-aos="fade-up">
-        <div style={styles.ctaContent}>
-          <h2 style={styles.ctaTitle}>Start Your Learning Journey Today!</h2>
-          <p style={styles.ctaText}>
+      <section style={styles.ctaSection} data-aos="fade-up" className="cta-section">
+        <div style={styles.ctaContent} className="cta-content">
+          <h2 style={styles.ctaTitle} className="cta-title">Start Your Learning Journey Today!</h2>
+          <p style={styles.ctaText} className="cta-text">
             Join thousands of AKTU students who are already advancing their careers with ByteGurukul.
           </p>
-          <div style={styles.ctaButtons}>
-            <Link to="/signup" style={styles.ctaPrimaryButton}>
+          <div style={styles.ctaButtons} className="cta-buttons">
+            <Link to="/signup" style={styles.ctaPrimaryButton} className="cta-btn-primary">
               Get Started Free
             </Link>
-            <Link to="/courses" style={styles.ctaSecondaryButton}>
+            <Link to="/courses" style={styles.ctaSecondaryButton} className="cta-btn-secondary">
               Browse Courses
             </Link>
           </div>
@@ -903,102 +915,85 @@ function Home() {
         </button>
       )}
 
-      {/* FIXED: Added responsive media queries using standard <style> tag
-         This overrides the inline JS styles on smaller screens.
-      */}
+      {/* GLOBAL RESPONSIVE STYLES INJECTION */}
       <style>
         {`
+          /* Animation Keyframes */
           @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
           }
-          
           @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
           }
-          
           @keyframes slideIn {
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
           }
-          
-          .floating-image {
-            animation: float 6s ease-in-out infinite;
-          }
-          
-          .course-card:hover {
-            transform: translateY(-10px) scale(1.03) !important;
-            transition: all 0.3s ease !important;
-          }
-          
-          .category-card:hover {
-            transform: translateY(-8px) !important;
-            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15) !important;
-          }
-          
-          .search-result-item {
-            animation: slideIn 0.3s ease-out forwards;
-            opacity: 0;
-          }
-          
-          .scroll-button {
-            animation: pulse 2s infinite;
-          }
-          
-          .about-image {
-            transition: transform 0.5s ease;
-          }
-          
-          .about-image:hover {
-            transform: scale(1.05);
+
+          /* General Classes */
+          .floating-image { animation: float 6s ease-in-out infinite; }
+          .scroll-button { animation: pulse 2s infinite; }
+          .search-result-item { animation: slideIn 0.3s ease-out forwards; opacity: 0; }
+
+          /* Hover Effects (Desktop Only) */
+          @media (hover: hover) {
+            .course-card:hover { transform: translateY(-10px) scale(1.03) !important; transition: all 0.3s ease !important; }
+            .category-card:hover { transform: translateY(-8px) !important; box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15) !important; }
+            .category-card:hover .category-hover { opacity: 1 !important; transform: translateY(0) !important; }
+            .feature-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15); border-color: #4F46E5 !important; }
+            .about-image:hover { transform: scale(1.05); }
+            .hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(79, 70, 229, 0.4); }
+            .hero-btn-secondary:hover { background-color: rgba(255, 255, 255, 0.2) !important; }
           }
 
-          /* --- RESPONSIVE OVERRIDES FOR HERO SECTION --- */
+          /* --- RESPONSIVE BREAKPOINTS --- */
+
+          /* Mobile (Portrait) - < 480px */
+          @media (max-width: 480px) {
+             .hero-title { font-size: 32px !important; }
+             .hero-tagline { font-size: 20px !important; min-height: 50px; }
+             .section-title { font-size: 28px !important; }
+             .stat-card { padding: 20px !important; }
+             .newsletter-form { flex-direction: column; }
+             .newsletter-btn { width: 100%; }
+             .hero-buttons { flex-direction: column; width: 100%; }
+             .hero-btn-primary, .hero-btn-secondary { width: 100%; justify-content: center; }
+             .cta-buttons { flex-direction: column; width: 100%; }
+             .cta-btn-primary, .cta-btn-secondary { width: 100%; display: block; box-sizing: border-box; }
+          }
+
+          /* Mobile/Tablet - < 768px */
           @media (max-width: 768px) {
-            .hero-section {
-               padding: 60px 20px !important;
-               flex-direction: column;
-            }
-            .hero-content {
-               flex-direction: column-reverse; /* Put image on top or bottom, adjust as preferred */
-               text-align: center;
-            }
-            .hero-left {
-               padding-right: 0 !important;
-               min-width: 100% !important;
-            }
-            .hero-right {
-               margin-bottom: 40px;
-               width: 100%;
-            }
-            .hero-title {
-               fontSize: 36px !important;
-               line-height: 1.3 !important;
-            }
-            .hero-tagline {
-               fontSize: 20px !important;
-               min-height: 60px; /* Prevent jump when typing */
-            }
-            .hero-subtitle {
-               fontSize: 16px !important;
-               margin-bottom: 30px !important;
-            }
-            .hero-search-wrapper {
-               margin: 0 auto 30px auto !important;
-            }
-            .hero-buttons {
-               justify-content: center;
-            }
-            .hero-trust {
-               justify-content: center;
-            }
-            .hero-img-container img {
-               max-width: 100% !important;
-            }
-            .floating-el {
-               display: none; /* Hide floating elements on mobile to reduce clutter */
-            }
+            .hero-content { flex-direction: column-reverse; text-align: center; }
+            .hero-left { padding-right: 0 !important; }
+            .hero-right { margin-bottom: 40px; width: 100%; display: flex; justify-content: center; }
+            .hero-search-wrapper { margin: 0 auto 30px auto !important; width: 100%; }
+            .hero-trust { justify-content: center; }
+            .floating-el { display: none; } /* Hide floating icons on mobile */
+            .mouse-trailer { display: none; }
+            .about-container { flex-direction: column; text-align: center; }
+            .about-content { text-align: center; }
+            .about-stats { justify-content: center; }
+            .search-form-container { width: 100%; }
+            .hero-image { max-width: 100% !important; height: auto; }
+          }
+
+          /* Tablet - 769px to 1024px */
+          @media (min-width: 769px) and (max-width: 1024px) {
+            .hero-title { font-size: 48px !important; }
+            .stat-card { padding: 30px 15px !important; }
+            .trust-grid, .features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          }
+
+          /* Large Screens / TV - 1441px+ */
+          @media (min-width: 1441px) {
+            .home-container { max-width: 1920px; margin: 0 auto; box-shadow: 0 0 50px rgba(0,0,0,0.05); }
+            .hero-title { font-size: 80px !important; }
+            .section-title { font-size: 56px !important; }
+            .course-card { padding: 40px 30px !important; }
+            .feature-card { padding: 50px 40px !important; }
           }
         `}
       </style>
@@ -1006,14 +1001,16 @@ function Home() {
   );
 }
 
-/* ---------------------------- ENHANCED STYLES ---------------------------- */
+/* ---------------------------- STYLES OBJECT ---------------------------- */
 const styles = {
   container: {
     backgroundColor: "#F8FAFC",
     color: "#1E293B",
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    overflow: "hidden",
+    overflowX: "hidden", // STRICTLY prevents horizontal scroll
     position: "relative",
+    width: "100%",
+    maxWidth: "100vw", // Ensures it never exceeds viewport width
   },
 
   // Mouse Trailer
@@ -1026,7 +1023,7 @@ const styles = {
     pointerEvents: "none",
     zIndex: 9999,
     transform: "translate(-50%, -50%)",
-    transition: "left 0.1s ease-out, top 0.1s ease-out",
+    transition: "left 0.05s ease-out, top 0.05s ease-out",
   },
 
   // Floating Background
@@ -1042,7 +1039,8 @@ const styles = {
   // Hero Section
   hero: {
     position: "relative",
-    padding: "120px 40px",
+    // Reduced padding for small screens to prevent squeezing
+    padding: "clamp(40px, 8vw, 120px) clamp(15px, 5%, 40px)", 
     background: "linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)",
     color: "white",
     overflow: "hidden",
@@ -1065,20 +1063,26 @@ const styles = {
     flexWrap: "wrap",
     maxWidth: "1400px",
     margin: "0 auto",
+    gap: "40px",
+    width: "100%", // Ensure content takes full width
   },
   heroLeft: {
-    flex: 1,
-    paddingRight: "60px",
-    minWidth: "300px",
+    flex: "1 1 500px",
+    paddingRight: "0px", // Removed fixed padding that could cause overflow on mobile
+    // FIX IS HERE: Changed minWidth from 300px to avoid overflow on small screens
+    minWidth: "min(100%, 280px)", 
   },
   heroRight: {
-    flex: 1,
+    flex: "1 1 400px",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    maxWidth: "100%", // Prevent image container from overflowing
   },
   heroImageContainer: {
     position: "relative",
+    maxWidth: "100%",
+    width: "100%", // Ensure it fits in parent
   },
   heroImage: {
     width: "100%",
@@ -1086,12 +1090,13 @@ const styles = {
     borderRadius: "24px",
     boxShadow: "0 32px 64px rgba(0, 0, 0, 0.3)",
     border: "8px solid rgba(255, 255, 255, 0.1)",
+    height: "auto",
   },
   floatingElement1: {
     position: "absolute",
     top: "-20px",
     right: "-20px",
-    fontSize: "40px",
+    fontSize: "clamp(24px, 4vw, 40px)",
     animation: "float 4s ease-in-out infinite",
     filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
   },
@@ -1099,7 +1104,7 @@ const styles = {
     position: "absolute",
     bottom: "40px",
     left: "-40px",
-    fontSize: "32px",
+    fontSize: "clamp(20px, 3vw, 32px)",
     animation: "float 5s ease-in-out infinite 1s",
     filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
   },
@@ -1107,21 +1112,9 @@ const styles = {
     position: "absolute",
     top: "40px",
     right: "60px",
-    fontSize: "28px",
+    fontSize: "clamp(18px, 3vw, 28px)",
     animation: "float 6s ease-in-out infinite 2s",
     filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))",
-  },
-
-  badge: {
-    display: "inline-block",
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    backdropFilter: "blur(10px)",
-    padding: "10px 20px",
-    borderRadius: "50px",
-    marginBottom: "30px",
-    fontSize: "14px",
-    fontWeight: "600",
-    border: "1px solid rgba(255, 255, 255, 0.2)",
   },
 
   gradientText: {
@@ -1132,14 +1125,15 @@ const styles = {
   },
 
   heroTitle: {
-    fontSize: "64px",
+    fontSize: "clamp(32px, 8vw, 64px)", // Slightly smaller min font size
     fontWeight: "800",
     marginBottom: "20px",
     lineHeight: "1.2",
+    wordBreak: "break-word", // FIX: Prevents long words like ByteGurukul from pushing width
   },
 
   heroTagline: {
-    fontSize: "28px",
+    fontSize: "clamp(20px, 3vw, 28px)",
     fontWeight: "600",
     marginBottom: "30px",
     color: "#C7D2FE",
@@ -1147,7 +1141,7 @@ const styles = {
   },
 
   heroSubtitle: {
-    fontSize: "18px",
+    fontSize: "clamp(16px, 2vw, 18px)",
     lineHeight: "1.8",
     marginBottom: "40px",
     color: "#E2E8F0",
@@ -1159,6 +1153,7 @@ const styles = {
     position: "relative",
     maxWidth: "700px",
     marginBottom: "40px",
+    width: "100%",
   },
   searchContainer: {
     display: "flex",
@@ -1167,9 +1162,10 @@ const styles = {
     overflow: "hidden",
     boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
     border: "2px solid rgba(255, 255, 255, 0.2)",
+    width: "100%",
   },
   searchIcon: {
-    padding: "0 20px",
+    padding: "0 15px", // Reduced padding
     color: "#64748B",
     fontSize: "20px",
     display: "flex",
@@ -1177,15 +1173,16 @@ const styles = {
   },
   searchInput: {
     flex: 1,
-    padding: "20px 10px",
+    padding: "15px 10px",
     border: "none",
     fontSize: "16px",
     outline: "none",
     color: "#1E293B",
     backgroundColor: "transparent",
+    minWidth: "0",
   },
   searchButton: {
-    padding: "0 30px",
+    padding: "0 20px",
     backgroundColor: "#4F46E5",
     color: "white",
     border: "none",
@@ -1193,6 +1190,7 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
+    whiteSpace: "nowrap",
   },
   searchResultsDropdown: {
     position: "absolute",
@@ -1226,12 +1224,14 @@ const styles = {
     fontWeight: "600",
     marginBottom: "4px",
     color: "#1E293B",
+    fontSize: "15px",
   },
   courseMeta: {
     display: "flex",
-    gap: "15px",
-    fontSize: "13px",
+    gap: "10px",
+    fontSize: "12px",
     color: "#64748B",
+    flexWrap: "wrap",
   },
   courseCategory: {
     backgroundColor: "#F1F5F9",
@@ -1246,29 +1246,20 @@ const styles = {
     color: "#CBD5E1",
     fontSize: "14px",
   },
-  searchAll: {
-    padding: "15px 20px",
-    backgroundColor: "#F8FAFC",
-    textAlign: "center",
-  },
-  searchAllLink: {
-    color: "#4F46E5",
-    textDecoration: "none",
-    fontWeight: "600",
-    fontSize: "14px",
-  },
 
   // Hero Buttons
   heroButtons: {
     display: "flex",
-    gap: "20px",
+    gap: "15px",
     flexWrap: "wrap",
     marginBottom: "40px",
+    width: "100%", // Added width 100%
   },
   primaryButton: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "18px 36px",
+    justifyContent: "center",
+    padding: "16px 30px",
     background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
     color: "white",
     borderRadius: "12px",
@@ -1279,11 +1270,13 @@ const styles = {
     transition: "all 0.3s ease",
     border: "none",
     cursor: "pointer",
+    flex: "1 1 auto", // Allow flex shrink/grow
   },
   secondaryButton: {
     display: "inline-flex",
     alignItems: "center",
-    padding: "18px 36px",
+    justifyContent: "center",
+    padding: "16px 30px",
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     backdropFilter: "blur(10px)",
     color: "white",
@@ -1293,11 +1286,12 @@ const styles = {
     fontWeight: "600",
     textDecoration: "none",
     transition: "all 0.3s ease",
+    flex: "1 1 auto",
   },
 
   trustIndicators: {
     display: "flex",
-    gap: "30px",
+    gap: "clamp(15px, 3vw, 30px)",
     flexWrap: "wrap",
   },
   trustItem: {
@@ -1311,10 +1305,12 @@ const styles = {
   // Stats Section
   statsSection: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "30px",
-    padding: "80px 40px",
+    padding: "clamp(40px, 5vw, 80px) 5%",
     backgroundColor: "white",
+    maxWidth: "1400px",
+    margin: "0 auto",
   },
   statCard: {
     padding: "40px 30px",
@@ -1325,7 +1321,7 @@ const styles = {
     boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
   },
   statNumber: {
-    fontSize: "48px",
+    fontSize: "clamp(36px, 4vw, 48px)",
     fontWeight: "800",
     margin: "15px 0",
     color: "#1E293B",
@@ -1340,9 +1336,10 @@ const styles = {
   sectionHeader: {
     textAlign: "center",
     marginBottom: "60px",
+    padding: "0 20px",
   },
   sectionTitle: {
-    fontSize: "48px",
+    fontSize: "clamp(28px, 4vw, 48px)",
     fontWeight: "800",
     marginBottom: "16px",
     color: "#1E293B",
@@ -1350,9 +1347,10 @@ const styles = {
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
+    wordBreak: "break-word",
   },
   sectionSubtitle: {
-    fontSize: "18px",
+    fontSize: "clamp(16px, 2vw, 18px)",
     color: "#64748B",
     maxWidth: "600px",
     margin: "0 auto",
@@ -1360,12 +1358,12 @@ const styles = {
 
   // Trust Section
   trustSection: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     backgroundColor: "#F8FAFC",
   },
   trustGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "30px",
     maxWidth: "1200px",
     margin: "0 auto",
@@ -1387,22 +1385,24 @@ const styles = {
   trustCardDesc: {
     color: "#64748B",
     lineHeight: "1.6",
+    fontSize: "15px",
   },
 
   // Featured Courses
   categorySection: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     backgroundColor: "white",
   },
   filterTabs: {
     display: "flex",
     justifyContent: "center",
     gap: "10px",
-    marginBottom: "20px",
+    marginBottom: "30px",
     flexWrap: "wrap",
+    padding: "0 10px",
   },
   filterTab: {
-    padding: "12px 24px",
+    padding: "10px 20px",
     borderRadius: "50px",
     border: "2px solid",
     cursor: "pointer",
@@ -1412,6 +1412,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
+    whiteSpace: "nowrap",
   },
   activeDot: {
     fontSize: "8px",
@@ -1433,6 +1434,9 @@ const styles = {
     transition: "all 0.4s ease",
     position: "relative",
     overflow: "hidden",
+    margin: "0 auto",
+    maxWidth: "400px", // Limit max width on large screens
+    width: "100%",
   },
   courseBadge: {
     position: "absolute",
@@ -1462,6 +1466,7 @@ const styles = {
   courseMeta: {
     display: "flex",
     justifyContent: "center",
+    flexWrap: "wrap",
     gap: "15px",
     marginBottom: "20px",
     fontSize: "13px",
@@ -1517,7 +1522,7 @@ const styles = {
 
   // Progress Section
   progressSection: {
-    padding: "80px 40px",
+    padding: "clamp(60px, 5vw, 80px) 5%",
     backgroundColor: "#F8FAFC",
   },
   progressGrid: {
@@ -1526,6 +1531,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "30px",
+    width: "100%",
   },
   progressBarContainer: {
     marginBottom: "10px",
@@ -1553,7 +1559,7 @@ const styles = {
   // Categories
   categoryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: "30px",
     maxWidth: "1200px",
     margin: "0 auto",
@@ -1588,12 +1594,12 @@ const styles = {
 
   // Features
   features: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     background: "linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)",
   },
   featuresGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: "40px",
     maxWidth: "1200px",
     margin: "0 auto",
@@ -1601,6 +1607,7 @@ const styles = {
   featureLink: {
     textDecoration: "none",
     color: "inherit",
+    display: "block",
   },
   featureCard: {
     backgroundColor: "white",
@@ -1610,6 +1617,7 @@ const styles = {
     textAlign: "center",
     transition: "all 0.4s ease",
     border: "2px solid transparent",
+    height: "100%", // Equal height
   },
   featureIconContainer: {
     width: "80px",
@@ -1648,7 +1656,7 @@ const styles = {
 
   // Newsletter
   newsletterSection: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)",
     textAlign: "center",
     color: "white",
@@ -1656,13 +1664,14 @@ const styles = {
   newsletterContent: {
     maxWidth: "600px",
     margin: "0 auto",
+    width: "100%",
   },
   newsletterIcon: {
     fontSize: "48px",
     marginBottom: "20px",
   },
   newsletterTitle: {
-    fontSize: "36px",
+    fontSize: "clamp(24px, 4vw, 36px)",
     fontWeight: "700",
     marginBottom: "15px",
   },
@@ -1676,15 +1685,18 @@ const styles = {
     display: "flex",
     gap: "10px",
     marginBottom: "15px",
+    width: "100%",
+    flexWrap: "wrap", // Added flexWrap
   },
   newsletterInput: {
-    flex: 1,
+    flex: "1 1 200px",
     padding: "18px 20px",
     border: "none",
     borderRadius: "12px",
     fontSize: "16px",
     outline: "none",
     backgroundColor: "rgba(255, 255, 255, 0.95)",
+    minWidth: "0",
   },
   newsletterButton: {
     padding: "18px 36px",
@@ -1696,6 +1708,8 @@ const styles = {
     fontWeight: "600",
     cursor: "pointer",
     transition: "all 0.3s ease",
+    whiteSpace: "nowrap",
+    flex: "0 0 auto",
   },
   newsletterDisclaimer: {
     fontSize: "14px",
@@ -1704,7 +1718,7 @@ const styles = {
 
   // About
   about: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     backgroundColor: "white",
   },
   aboutContainer: {
@@ -1718,6 +1732,7 @@ const styles = {
   },
   aboutImageContainer: {
     position: "relative",
+    flexShrink: 0,
   },
   aboutImage: {
     width: "280px",
@@ -1725,6 +1740,7 @@ const styles = {
     borderRadius: "24px",
     objectFit: "cover",
     boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
+    maxWidth: "100%",
   },
   aboutBadge: {
     position: "absolute",
@@ -1740,11 +1756,11 @@ const styles = {
   },
   aboutContent: {
     flex: 1,
-    minWidth: "300px",
+    minWidth: "280px", // Adjusted minWidth
     textAlign: "left",
   },
   aboutName: {
-    fontSize: "32px",
+    fontSize: "clamp(24px, 3vw, 32px)",
     fontWeight: "800",
     marginBottom: "8px",
     color: "#1E293B",
@@ -1764,6 +1780,7 @@ const styles = {
   aboutStats: {
     display: "flex",
     gap: "30px",
+    flexWrap: "wrap",
   },
   stat: {
     textAlign: "center",
@@ -1783,7 +1800,7 @@ const styles = {
 
   // CTA
   ctaSection: {
-    padding: "100px 40px",
+    padding: "clamp(60px, 5vw, 100px) 5%",
     textAlign: "center",
     background: "linear-gradient(135deg, #1E1B4B 0%, #312E81 100%)",
     color: "white",
@@ -1791,11 +1808,13 @@ const styles = {
   ctaContent: {
     maxWidth: "800px",
     margin: "0 auto",
+    width: "100%",
   },
   ctaTitle: {
-    fontSize: "48px",
+    fontSize: "clamp(32px, 5vw, 48px)",
     fontWeight: "800",
     marginBottom: "20px",
+    wordBreak: "break-word",
   },
   ctaText: {
     fontSize: "18px",
@@ -1821,6 +1840,7 @@ const styles = {
     textDecoration: "none",
     boxShadow: "0 10px 25px rgba(255, 255, 255, 0.2)",
     transition: "all 0.3s ease",
+    flex: "1 1 auto",
   },
   ctaSecondaryButton: {
     padding: "20px 40px",
@@ -1832,6 +1852,7 @@ const styles = {
     fontWeight: "600",
     textDecoration: "none",
     transition: "all 0.3s ease",
+    flex: "1 1 auto",
   },
 
   // Scroll Button
@@ -1855,52 +1876,5 @@ const styles = {
     transition: "all 0.3s ease",
   },
 };
-
-// Add hover effects via JS
-Object.assign(styles, {
-  searchButtonHover: {
-    backgroundColor: "#4338CA",
-  },
-  primaryButtonHover: {
-    transform: "translateY(-2px)",
-    boxShadow: "0 15px 30px rgba(79, 70, 229, 0.4)",
-  },
-  secondaryButtonHover: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-  },
-  viewCourseButtonHover: {
-    backgroundColor: "#4F46E5",
-    color: "white",
-  },
-  controlButtonHover: {
-    backgroundColor: "#4F46E5",
-    color: "white",
-    borderColor: "#4F46E5",
-  },
-  categoryCardHover: {
-    ".categoryHover": {
-      opacity: 1,
-      transform: "translateY(0)",
-    },
-  },
-  featureCardHover: {
-    transform: "translateY(-10px)",
-    boxShadow: "0 20px 40px rgba(79, 70, 229, 0.15)",
-    borderColor: "#4F46E5",
-  },
-  newsletterButtonHover: {
-    backgroundColor: "#0F172A",
-  },
-  ctaPrimaryButtonHover: {
-    transform: "translateY(-3px)",
-    boxShadow: "0 15px 30px rgba(255, 255, 255, 0.3)",
-  },
-  ctaSecondaryButtonHover: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-  },
-  scrollButtonHover: {
-    transform: "scale(1.1)",
-  },
-});
 
 export default Home;

@@ -13,12 +13,24 @@ function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // STOP PAGE REFRESH
     setError("");
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      // 1. Call login
+      const response = await login(email, password);
+      
+      // 2. Manual Redirect (Backup safety if Context doesn't redirect)
+      if(response) {
+         const userRole = response.user?.role || response.role || "student";
+         const safeRole = userRole.toLowerCase();
+         
+         if (safeRole === "admin") navigate("/admin-dashboard");
+         else if (safeRole === "instructor") navigate("/instructor/courses");
+         else navigate("/dashboard");
+      }
+
     } catch (err) {
       setError("Invalid email or password. Please try again.");
     } finally {
@@ -26,9 +38,8 @@ function Login() {
     }
   };
 
-  // --- NEW FUNCTION FOR SOCIAL LOGIN ---
+  // --- SOCIAL LOGIN HANDLER ---
   const handleSocialLogin = (provider) => {
-    // Redirect browser to Backend URL
     window.location.href = `http://localhost:5003/api/auth/${provider}`;
   };
 
@@ -38,7 +49,6 @@ function Login() {
         <h1 style={styles.title}>Welcome Back 👋</h1>
         <p style={styles.subtitle}>Sign in to continue your learning journey</p>
 
-        {/* Error Message */}
         {error && <div style={styles.errorBox}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -88,24 +98,22 @@ function Login() {
           </button>
         </form>
 
-        {/* Divider */}
         <div style={styles.divider}>
           <span style={styles.dividerText}>or continue with</span>
         </div>
 
-        {/* Social Buttons */}
         <div style={styles.socialButtons}>
           <button 
             type="button" 
             style={styles.googleButton}
-            onClick={() => handleSocialLogin('google')} // ADDED ONCLICK
+            onClick={() => handleSocialLogin('google')} 
           >
             <FaGoogle /> Google
           </button>
           <button 
             type="button" 
             style={styles.githubButton}
-            onClick={() => handleSocialLogin('github')} // ADDED ONCLICK
+            onClick={() => handleSocialLogin('github')} 
           >
             <FaGithub /> GitHub
           </button>
@@ -282,18 +290,15 @@ const styles = {
   },
 };
 
-/* 💫 Hover & Focus Animations */
 const hoverStyles = `
   input:focus {
     border-color: #93c5fd !important;
     box-shadow: 0 0 8px rgba(147,197,253,0.6);
   }
-
   button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 18px rgba(147,197,253,0.3);
   }
-
   .googleButton:hover, .githubButton:hover {
     background: rgba(255,255,255,0.25);
   }

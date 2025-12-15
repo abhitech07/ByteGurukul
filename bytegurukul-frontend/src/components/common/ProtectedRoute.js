@@ -16,11 +16,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   // Check for role-based access
   if (allowedRoles && allowedRoles.length > 0) {
-    // Assuming user.role is stored as 'Admin', 'Instructor', 'Student' etc.
-    // Normalize to lowercase for comparison if needed, or ensure strictly matching strings
-    const userRole = user.role; 
-    
-    if (!allowedRoles.includes(userRole)) {
+    const userRole = user.role;
+
+    // Case-insensitive role check
+    if (!allowedRoles.some(role => role.toLowerCase() === userRole.toLowerCase())) {
       // User authorized but not for this role -> redirect to dashboard or home
       return <Navigate to="/dashboard" replace />;
     }

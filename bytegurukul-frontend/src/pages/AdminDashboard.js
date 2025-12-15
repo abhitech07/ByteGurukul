@@ -125,7 +125,7 @@ function AdminDashboard() {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/internship/all");
+        const res = await axios.get("http://localhost:5003/api/internship/all");
         if (res.data.success) {
           const pending = res.data.data.filter((app) => app.status === "Pending");
           setPendingApplications(pending);
@@ -143,7 +143,7 @@ function AdminDashboard() {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/analytics/admin/dashboard", {
+        const res = await axios.get("http://localhost:5003/api/analytics/admin/dashboard", {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.success) {
@@ -175,7 +175,7 @@ function AdminDashboard() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/internship/${id}/status`,
+        `http://localhost:5003/api/internship/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

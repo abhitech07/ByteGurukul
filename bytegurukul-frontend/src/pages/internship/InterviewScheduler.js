@@ -19,7 +19,7 @@ export default function InterviewScheduler() {
     // Auto-find the application ID to schedule for
     const findApp = async () => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/internship/student/${studentEmail}`);
+            const res = await axios.get(`http://localhost:5003/api/internship/student/${studentEmail}`);
             const approvedApp = res.data.data.find(app => app.status === 'Approved');
             if (approvedApp) {
                 setTargetAppId(approvedApp.id);
@@ -43,7 +43,7 @@ export default function InterviewScheduler() {
         // Combine date and time
         const dateTime = new Date(`${selectedDate}T${selectedTime}`);
 
-        const res = await axios.post('http://localhost:5000/api/internship/schedule', {
+        const res = await axios.post('http://localhost:5003/api/internship/schedule', {
             applicationId: String(targetAppId),
             date: dateTime,
             type: 'Technical Round'

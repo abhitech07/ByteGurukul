@@ -12,43 +12,52 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // 隼 SECURE FIREBASE INIT
+  // 1. DEFINE CONFIG
   const firebaseConfig = window.__firebase_config ? JSON.parse(window.__firebase_config) : {
     apiKey: "AIzaSyD-QMOCK-API-KEY-FOR-DEV-ENV", 
     authDomain: "mock-project.firebaseapp.com",
     projectId: "mock-project",
   };
 
+  // 2. CHECK IF WE ARE IN MOCK MODE
+  const isMockMode = firebaseConfig.apiKey.includes("MOCK-API-KEY");
+
   let app;
-  let auth;
+  let auth = null;
+
+  // 3. ONLY INITIALIZE FIREBASE IF KEY IS REAL
   try {
-    if (!getApps().length) {
-      app = initializeApp(firebaseConfig);
+    if (!isMockMode) {
+      if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+      } else {
+        app = getApps()[0];
+      }
+      auth = getAuth(app);
     } else {
-      app = getApps()[0];
+      // Mock auth object to prevent crashes
+      auth = { currentUser: null };
+      console.log("Running in Mock Mode (Firebase disabled to prevent API Key errors)");
     }
-    auth = getAuth(app);
   } catch (error) {
     console.error("Firebase Initialization Error:", error);
     auth = { currentUser: null }; 
   }
 
-  // 隼 Load user from localStorage & Firebase on app start
+  // Load user from localStorage & Firebase on app start
   useEffect(() => {
     const initAuth = async () => {
-      // 1. Firebase Auth Check
-      try {
-        if (window.__initial_auth_token && auth.currentUser === null) {
-           if(firebaseConfig.apiKey !== "AIzaSyD-QMOCK-API-KEY-FOR-DEV-ENV") {
+      // 1. Firebase Auth Check (SKIP IF MOCK MODE)
+      if (!isMockMode && auth) {
+        try {
+          if (window.__initial_auth_token && auth.currentUser === null) {
               await signInWithCustomToken(auth, window.__initial_auth_token);
-           }
-        } else if (auth.currentUser === null) {
-           if(firebaseConfig.apiKey !== "AIzaSyD-QMOCK-API-KEY-FOR-DEV-ENV") {
+          } else if (auth.currentUser === null) {
               await signInAnonymously(auth);
-           }
+          }
+        } catch (e) {
+          console.warn("Firebase auth skipped:", e.code);
         }
-      } catch (e) {
-        console.warn("Firebase auth skipped (using mock/local mode):", e.code);
       }
 
       // 2. Backend Auth Check (localStorage)
@@ -57,18 +66,17 @@ export function AuthProvider({ children }) {
         if (storedUser) {
           setUser(storedUser);
           
-          // --- FIX: Use 'storedUser' variable, NOT 'user' state ---
           const publicPaths = ["/", "/login", "/signup", "/forgot", "/auth-success"];
           const currentPath = window.location.pathname;
 
           // Only redirect if the user is currently on a public page
           if (publicPaths.includes(currentPath)) {
-            const role = (storedUser.role || "").toLowerCase(); // FIXED: Check storedUser.role
+            const role = (storedUser.role || "").toLowerCase();
             
             if (role === "admin") {
                 navigate("/admin-dashboard");
             } else if (role === "instructor") {
-                navigate("/instructor/courses"); // Fixed path to match your routes
+                navigate("/instructor/courses");
             } else {
                 navigate("/dashboard");
             }
@@ -84,8 +92,9 @@ export function AuthProvider({ children }) {
 
     initAuth();
     
+    // Only subscribe to listener if NOT in mock mode
     let unsubscribe = () => {};
-    if (auth.onAuthStateChanged) {
+    if (!isMockMode && auth && auth.onAuthStateChanged) {
         unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 // Connected
@@ -94,27 +103,27 @@ export function AuthProvider({ children }) {
     }
     
     return () => unsubscribe();
-  }, [auth, firebaseConfig.apiKey]); // Removed 'navigate' to prevent loops
+  }, [auth, isMockMode]); // Added isMockMode to dependencies
 
-  // 隼 LOGIN
+  // LOGIN
   const login = async (email, password) => {
     try {
       const response = await authService.login({ email, password });
 
-      if (response.success) {
-        const userData = response.user; 
+      if (response.success || response.token) { // Check for token too
+        const userData = response.user || response.data?.user || response; 
         
         localStorage.removeItem('user');
-        // Save to local storage manually to ensure persistence before navigation
-        if (response.token) {
-            localStorage.setItem('token', response.token);
+        
+        if (response.token || response.data?.token) {
+            localStorage.setItem('token', response.token || response.data?.token);
             localStorage.setItem('user', JSON.stringify(userData));
         }
 
         setUser(userData);
 
+        // Explicit Navigation after Login
         const role = (userData?.role || "").toLowerCase();
-
         if (role === "admin") {
             navigate("/admin-dashboard", { replace: true });
         } else if (role === "instructor") {
@@ -130,14 +139,12 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 隼 SIGNUP
+  // SIGNUP
   const register = async (formData) => {
     try {
       const response = await authService.register(formData);
       
       if (response.success) {
-        // Automatically login after signup is usually better UX, 
-        // but if your flow requires login page, navigate("/login")
         navigate("/login"); 
       }
       return response;
@@ -147,7 +154,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // 隼 LOGOUT
+  // LOGOUT
   const logout = () => {
     authService.logout();
     setUser(null);

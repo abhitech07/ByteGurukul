@@ -35,7 +35,7 @@ function AdminTaskReviews() {
   const fetchTasks = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/tasks/my-tasks", {
+      const res = await axios.get("http://localhost:5003/api/tasks/my-tasks", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -51,7 +51,7 @@ function AdminTaskReviews() {
   const fetchSubmissions = async (taskId) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`http://localhost:5000/api/submissions/task/${taskId}`, {
+      const res = await axios.get(`http://localhost:5003/api/submissions/task/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
@@ -70,7 +70,7 @@ function AdminTaskReviews() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/submissions/${submissionId}`,
+        `http://localhost:5003/api/submissions/${submissionId}`,
         { grade: parseInt(grade), feedback },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -167,7 +167,7 @@ function AdminTaskReviews() {
 
                       {sub.fileUrl && (
                         <div style={{ marginBottom: "10px" }}>
-                          <strong>File:</strong> <a href={`http://localhost:5000/${sub.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent }}>
+                          <strong>File:</strong> <a href={`http://localhost:5003/${sub.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ color: colors.accent }}>
                             Download
                           </a>
                         </div>

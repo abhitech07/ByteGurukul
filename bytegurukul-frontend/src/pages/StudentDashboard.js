@@ -6,37 +6,51 @@ import { useCart } from "../contexts/CartContext";
 import { Link } from "react-router-dom";
 import StudentNavbar from "../components/student/StudentNavbar";
 
-
 function StudentDashboard() {
   const { user, logout } = useAuth();
-  const { enrolledCourses, getOverallProgress, completedCourses } = useCourse();
-  const { orders, getCartItemsCount } = useCart();
+  
+  // 🛡️ SAFETY FIX: prevent crash if contexts are missing
+  const courseContext = useCourse();
+  const cartContext = useCart();
+
+  // Default values to prevent "cannot read property of undefined" errors
+  const enrolledCourses = courseContext?.enrolledCourses || [];
+  const completedCourses = courseContext?.completedCourses || [];
+  const getOverallProgress = courseContext?.getOverallProgress || (() => 0);
+  
+  const orders = cartContext?.orders || [];
+  const getCartItemsCount = cartContext?.getCartItemsCount || (() => 0);
 
   const overallProgress = getOverallProgress();
   const enrolledCount = enrolledCourses.length;
   const completedCount = completedCourses.length;
 
-  const totalLessons = enrolledCourses.reduce(
-    (t, c) => t + (c.lessons || 24),
-    0
-  );
-  const completedLessons = enrolledCourses.reduce((t, c) => {
-    const progress = c.progress || 0;
-    const courseLessons = c.lessons || 24;
-    return t + Math.round((progress / 100) * courseLessons);
-  }, 0);
+  // Safety check for reduce
+  const totalLessons = Array.isArray(enrolledCourses) 
+    ? enrolledCourses.reduce((t, c) => t + (c.lessons || 24), 0) 
+    : 0;
+
+  const completedLessons = Array.isArray(enrolledCourses) 
+    ? enrolledCourses.reduce((t, c) => {
+        const progress = c.progress || 0;
+        const courseLessons = c.lessons || 24;
+        return t + Math.round((progress / 100) * courseLessons);
+      }, 0)
+    : 0;
 
   return (
-    <div style={styles.container} className="bg-main">
+    <div style={styles.container}>
+      {/* Navbar handled here */}
       <StudentNavbar />
+      
       {/* WELCOME HEADER */}
-      <div style={styles.headerCard} className="bg-surface">
+      <div style={styles.headerCard}>
         <div>
           <h1 style={styles.headerTitle}>
             Welcome back,{" "}
-            <span style={styles.highlight}>{user.name}</span> 🎓
+            <span style={styles.highlight}>{user?.name || "Student"}</span> 🎓
           </h1>
-          <p style={styles.headerSubtitle}>{user.email}</p>
+          <p style={styles.headerSubtitle}>{user?.email}</p>
         </div>
         <button onClick={logout} style={styles.logoutButton}>
           Logout
@@ -115,10 +129,7 @@ function StudentDashboard() {
             {enrolledCourses.slice(0, 4).map((course) => (
               <div
                 key={course.id}
-                style={{
-                  ...styles.courseCard,
-                }}
-                className="course-card"
+                style={styles.courseCard}
               >
                 <div style={styles.courseHeader}>
                   <div style={styles.courseIcon}>
@@ -202,12 +213,12 @@ function StudentDashboard() {
 /* 🔥 Updated Student Dashboard Styles */
 const styles = {
   container: {
-  background: "linear-gradient(135deg,#f8fafc,#eef2ff)",
-  padding: "10px 20px",      // reduced
-  paddingTop: "0px",         // 🔥 removes gap fully
-  minHeight: "100vh",
-  fontFamily: "Poppins",
-},
+    background: "linear-gradient(135deg,#f8fafc,#eef2ff)",
+    padding: "20px",
+    minHeight: "100vh",
+    fontFamily: "Poppins, sans-serif",
+    paddingTop: "10px", // Added small padding so content doesn't touch top
+  },
   /* HEADER */
   headerCard: {
     background: "linear-gradient(135deg,#2563eb,#9333ea)",
@@ -219,10 +230,11 @@ const styles = {
     alignItems: "center",
     boxShadow: "0 6px 25px rgba(0,0,0,0.2)",
     marginBottom: 35,
+    marginTop: 20,
   },
-  headerTitle: { fontSize: 30, fontWeight: 700 },
+  headerTitle: { fontSize: 30, fontWeight: 700, margin: 0 },
   highlight: { color: "#facc15" },
-  headerSubtitle: { marginTop: 5, opacity: 0.9 },
+  headerSubtitle: { marginTop: 5, opacity: 0.9, fontSize: 16 },
 
   logoutButton: {
     background: "rgba(255,255,255,0.15)",
@@ -243,25 +255,26 @@ const styles = {
     marginBottom: 35,
   },
   overviewCard: {
-    background: "var(--surface)",
+    background: "white",
     borderRadius: 14,
     padding: 25,
     textAlign: "center",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
     transition: "0.3s",
   },
 
-  cardTitle: { fontSize: 14, color: "#6b7280" },
+  cardTitle: { fontSize: 14, color: "#6b7280", margin: 0 },
   cardValue: {
     marginTop: 10,
     fontSize: 28,
     fontWeight: 700,
     color: "#2563eb",
+    margin: "10px 0 0 0",
   },
 
   /* PROGRESS */
   progressSection: { marginBottom: 50 },
-  sectionTitle: { fontSize: 24, fontWeight: 600, marginBottom: 20 },
+  sectionTitle: { fontSize: 24, fontWeight: 600, marginBottom: 20, color: "#1e293b" },
 
   progressCard: {
     background: "white",
@@ -271,13 +284,16 @@ const styles = {
     justifyContent: "space-between",
     gap: 20,
     alignItems: "center",
-    boxShadow: "0 6px 25px rgba(0,0,0,0.1)",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
+    flexWrap: "wrap",
   },
 
-  progressText: { fontSize: 15, color: "#475569" },
+  progressInfo: { flex: 1 },
+  progressText: { fontSize: 15, color: "#475569", marginBottom: 15 },
 
   progressBar: {
-    width: "280px",
+    width: "100%",
+    maxWidth: "400px",
     height: 8,
     background: "#e2e8f0",
     borderRadius: 5,
@@ -286,6 +302,7 @@ const styles = {
   progressFill: {
     height: "100%",
     background: "linear-gradient(90deg,#2563eb,#9333ea)",
+    transition: "width 0.5s ease",
   },
 
   circleWrapper: { display: "flex", alignItems: "center" },
@@ -300,24 +317,34 @@ const styles = {
     color: "white",
     fontSize: 22,
     fontWeight: 700,
-    boxShadow: "0 0 12px rgba(37,99,235,0.4)",
+    boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
   },
+  circleText: { color: "white" },
 
   /* MY COURSES */
   coursesSection: { marginBottom: 60 },
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  link: { color: "#2563eb", textDecoration: "none", fontWeight: 600 },
 
   coursesGrid: {
     display: "grid",
     gap: 20,
-    gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))",
   },
 
   courseCard: {
     background: "white",
     borderRadius: 14,
     padding: 25,
-    boxShadow: "0 6px 25px rgba(0,0,0,0.1)",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
     transition: "0.3s",
+    display: "flex",
+    flexDirection: "column",
   },
 
   courseHeader: {
@@ -327,23 +354,24 @@ const styles = {
     alignItems: "center",
   },
   courseIcon: { fontSize: 40 },
-  courseName: { fontWeight: 600, fontSize: 18 },
-  courseInstructor: { color: "#64748b", fontSize: 14 },
+  courseName: { fontWeight: 600, fontSize: 18, margin: 0, color: "#1e293b" },
+  courseInstructor: { color: "#64748b", fontSize: 14, margin: "5px 0 0 0" },
 
-  progressBox: { marginBottom: 10 },
+  progressBox: { marginBottom: 15 },
 
   courseBar: {
     height: 6,
     background: "#e5e7eb",
     borderRadius: 4,
     overflow: "hidden",
+    marginTop: 8,
   },
   courseFill: {
     height: "100%",
     background: "linear-gradient(90deg,#2563eb,#9333ea)",
   },
 
-  courseButtons: { display: "flex", gap: 10, marginTop: 10 },
+  courseButtons: { display: "flex", gap: 10, marginTop: "auto" },
 
   btnPrimary: {
     flex: 1,
@@ -354,17 +382,19 @@ const styles = {
     textDecoration: "none",
     fontWeight: 600,
     textAlign: "center",
+    fontSize: 14,
   },
   btnOutline: {
     flex: 1,
-    border: "2px solid #cbd5e1",
-    padding: "10px 0",
+    border: "2px solid #e2e8f0",
+    padding: "8px 0",
     borderRadius: 8,
     textAlign: "center",
     textDecoration: "none",
     color: "#475569",
     fontWeight: 500,
     transition: "0.3s",
+    fontSize: 14,
   },
 
   /* QUICK ACTIONS */
@@ -372,7 +402,7 @@ const styles = {
   actionsGrid: {
     display: "grid",
     gap: 20,
-    gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
+    gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
   },
   actionCard: {
     position: "relative",
@@ -380,12 +410,17 @@ const styles = {
     borderRadius: 14,
     padding: 30,
     textAlign: "center",
-    boxShadow: "0 6px 25px rgba(0,0,0,0.1)",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
     textDecoration: "none",
-    color: "var(--text-primary)",
-    fontSize: 18,
+    color: "#1e293b",
+    fontSize: 16,
     fontWeight: 600,
     transition: "0.3s",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 10,
+    border: "1px solid #f1f5f9",
   },
 
   cartBadge: {
@@ -394,9 +429,10 @@ const styles = {
     right: 10,
     background: "#ef4444",
     color: "white",
-    padding: "4px 8px",
+    padding: "2px 8px",
     fontSize: 12,
-    borderRadius: "50%",
+    borderRadius: "10px",
+    fontWeight: "bold",
   },
 
   /* EMPTY STATE */
@@ -405,12 +441,11 @@ const styles = {
     background: "white",
     borderRadius: 16,
     textAlign: "center",
-    boxShadow: "0 6px 25px rgba(0,0,0,0.1)",
+    boxShadow: "0 6px 25px rgba(0,0,0,0.05)",
   },
-  emptyText: { fontSize: 16, color: "#475569" },
+  emptyText: { fontSize: 16, color: "#475569", marginBottom: 20 },
 
   browseButton: {
-    marginTop: 16,
     padding: "12px 22px",
     background: "linear-gradient(90deg,#2563eb,#9333ea)",
     color: "white",

@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { Submission, Task, User } = require('../models');
+const { Submission, Task, User, Application } = require('../models');
 const { protect } = require('../middleware/auth');
+const { adminAuth } = require('../middleware/adminAuth');
 const multer = require('multer');
 const path = require('node:path');
 
@@ -154,6 +155,56 @@ router.put('/:submissionId', protect, async (req, res) => {
         await submission.save();
 
         res.json({ success: true, data: submission, message: "Submission graded successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// @route   PUT /api/submissions/:submissionId/verify
+// @desc    Verify a submission (Admin only)
+router.put('/:submissionId/verify', protect, adminAuth, async (req, res) => {
+    try {
+        const submission = await Submission.findByPk(req.params.submissionId);
+
+        if (!submission) {
+            return res.status(404).json({ success: false, message: "Submission not found" });
+        }
+
+        // Update submission status to verified
+        submission.status = 'verified';
+        await submission.save();
+
+        // Check if all submissions for the student are verified
+        const allSubmissions = await Submission.findAll({
+            where: { studentId: submission.studentId }
+        });
+
+        const allVerified = allSubmissions.every(sub => sub.status === 'verified');
+
+        let applicationUpdated = false;
+        if (allVerified) {
+            // Find the user to get email
+            const user = await User.findByPk(submission.studentId);
+            if (user) {
+                // Find application by email
+                const application = await Application.findOne({
+                    where: { email: user.email }
+                });
+                if (application) {
+                    application.internshipStatus = 'completed';
+                    await application.save();
+                    applicationUpdated = true;
+                }
+            }
+        }
+
+        res.json({
+            success: true,
+            data: submission,
+            message: "Submission verified successfully",
+            allTasksCompleted: allVerified,
+            applicationUpdated
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

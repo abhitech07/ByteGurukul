@@ -4,16 +4,17 @@ export const authService = {
   // Register new user
   register: async (userData) => {
     try {
-      // FIX: Changed endpoint to match backend route defined in authRoutes.js
       const response = await api.post('/auth/signup', userData);
       
-      // Store token and user data in localStorage on successful registration
-      if (response.success && response.data.token) {
+      // Check success inside response.data
+      if (response.data && response.data.success && response.data.token) {
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data));
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
       
-      return response;
+      // ✅ FIX: Return response.data so the component gets { success: true, user: ... }
+      // instead of the full Axios object
+      return response.data; 
     } catch (error) {
       throw error;
     }
@@ -24,16 +25,23 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', credentials);
 
-      console.log('AuthService Login Response:', response); // DEBUG
-      console.log('AuthService Response.user:', response.user); // DEBUG
-      console.log('AuthService Response.user.role:', response.user?.role); // DEBUG
+      console.log('AuthService Login Response:', response); 
+      
+      // Destructure data from the axios response
+      const { data } = response; 
 
-      if (response.success && response.token) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+      console.log('My jwt token', data.token); 
+      console.log('AuthService Response.user:', data.user); 
+      console.log('AuthService Response.user.role:', data.user?.role); 
+
+      if (data && data.success && data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
       }
 
-      return response;
+      // ✅ FIX: Return 'data' directly. 
+      // This ensures your Login.js receives the object containing { user, role, token }
+      return data; 
     } catch (error) {
       throw error;
     }
@@ -43,7 +51,8 @@ export const authService = {
   getProfile: async () => {
     try {
       const response = await api.get('/auth/me');
-      return response;
+      // ✅ FIX: Return data
+      return response.data; 
     } catch (error) {
       throw error;
     }

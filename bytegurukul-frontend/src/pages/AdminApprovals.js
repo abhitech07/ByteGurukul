@@ -15,7 +15,7 @@ export default function AdminApprovals() {
 
   const fetchApplications = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/internship/all");
+      const res = await axios.get("http://localhost:5003/api/internship/all");
       if (res.data.success) {
         setApplications(res.data.data);
       }
@@ -29,7 +29,7 @@ export default function AdminApprovals() {
   const handleStatusUpdate = async (id, newStatus) => {
     setActionLoading(id);
     try {
-      const res = await axios.put(`http://localhost:5000/api/internship/${id}/status`, {
+      const res = await axios.put(`http://localhost:5003/api/internship/${id}/status`, {
         status: newStatus,
       });
       if (res.data.success) {
